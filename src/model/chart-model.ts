@@ -606,7 +606,7 @@ export class ChartModel implements IDestroyable {
 	private _createSeries<T extends SeriesType>(options: SeriesOptionsMap[T], seriesType: T, pane: Pane): Series<T> {
 		const series = new Series<T>(this, options, seriesType);
 
-		pane.addDataSource(series, Boolean(options.overlay), false);
+		pane.addDataSource(series, Boolean(options.overlay), false, options.scaleGroup);
 
 		if (options.overlay) {
 			// let's apply that options again to apply margins

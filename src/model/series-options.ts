@@ -160,6 +160,8 @@ export interface SeriesOptionsCommon {
 	/** Title of the series. This label is placed with price axis label */
 	title: string;
 
+	scaleGroup: string;
+
 	/**
 	 * @internal
 	 */

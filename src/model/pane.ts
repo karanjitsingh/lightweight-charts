@@ -38,6 +38,8 @@ export class Pane implements IDestroyable {
 	private _mainDataSource: IPriceDataSource | null = null;
 	private _cachedOrderedSources: ReadonlyArray<IDataSource> | null = null;
 
+	private _groupedPriceScale: {[id: string]: PriceScale} = {};
+
 	private _destroyed: Delegate = new Delegate();
 
 	public constructor(timeScale: TimeScale, model: ChartModel) {
@@ -120,9 +122,9 @@ export class Pane implements IDestroyable {
 		return this._defaultNonOverlayPriceScale !== priceScale;
 	}
 
-	public addDataSource(source: IDataSource, overlay: boolean, keepZorder: boolean): void {
+	public addDataSource(source: IDataSource, overlay: boolean, keepZorder: boolean, scaleGroup?: string): void {
 		const zOrder = this._getZOrderMinMax().minZOrder - 1;
-		this._insertDataSource(source, overlay, zOrder);
+		this._insertDataSource(source, overlay, zOrder, scaleGroup);
 	}
 
 	public removeDataSource(source: IDataSource): void {
@@ -289,9 +291,17 @@ export class Pane implements IDestroyable {
 		return this._destroyed;
 	}
 
-	private _findSuitableScale(source: IPriceDataSource, preferredScale: PreferredPriceScalePosition): PriceScale {
+	private _findSuitableScale(source: IPriceDataSource, preferredScale: PreferredPriceScalePosition, scaleGroup?: string): PriceScale {
 		if (preferredScale !== 'overlay') {
 			return this._defaultNonOverlayPriceScale;
+		}
+
+		if (scaleGroup) {
+			if (!this._groupedPriceScale[scaleGroup]) {
+				this._groupedPriceScale[scaleGroup] = this._createPriceScale();
+			}
+
+			return this._groupedPriceScale[scaleGroup];
 		}
 
 		return this._createPriceScale();
@@ -336,7 +346,7 @@ export class Pane implements IDestroyable {
 		return { minZOrder: minZOrder, maxZOrder: maxZOrder };
 	}
 
-	private _insertDataSource(source: IDataSource, overlay: boolean, zOrder: number): void {
+	private _insertDataSource(source: IDataSource, overlay: boolean, zOrder: number, scaleGroup?: string): void {
 		let priceScalePosition: PreferredPriceScalePosition = 'overlay';
 		let priceScale: PriceScale | null = null;
 		if (!overlay) {
@@ -345,7 +355,7 @@ export class Pane implements IDestroyable {
 		}
 
 		if (source instanceof PriceDataSource) {
-			priceScale = this._findSuitableScale(source, priceScalePosition);
+			priceScale = this._findSuitableScale(source, priceScalePosition, scaleGroup);
 		}
 
 		this._dataSources.push(source);
