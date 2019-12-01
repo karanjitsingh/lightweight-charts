@@ -263,7 +263,7 @@ export class PaneWidget implements IDestroyable {
 				hitTest.view.moveHandler(x, y);
 			}
 
-			this.syncCrosshair(x);
+			this._syncCrosshair(x);
 		}
 	}
 
@@ -520,14 +520,22 @@ export class PaneWidget implements IDestroyable {
 		this._setCrosshairPosition(coordinate, 0 as Coordinate);
 	}
 
-	private syncCrosshair(x: Coordinate): void {
-		const index = this._model().timeScale().coordinateToIndex(x);
-		const time = this._model().timeScale().indexToUserTime(index);
+	private _syncCrosshair(x?: Coordinate): void {
+		if (x !== undefined) {
+			const index = this._model().timeScale().coordinateToIndex(x);
+			const time = this._model().timeScale().indexToUserTime(index);
 
-		if (time) {
+			if (time) {
+				PaneWidget.PANE_MAP.forEach((pane: PaneWidget, id: number) => {
+					if (this._paneId !== id) {
+						pane.setCrosshairPositionByTime(time.timestamp);
+					}
+				});
+			}
+		} else {
 			PaneWidget.PANE_MAP.forEach((pane: PaneWidget, id: number) => {
 				if (this._paneId !== id) {
-					pane.setCrosshairPositionByTime(time.timestamp);
+					pane._clearCrosshairPosition();
 				}
 			});
 		}
@@ -733,6 +741,7 @@ export class PaneWidget implements IDestroyable {
 
 	private _clearCrosshairPosition(): void {
 		this._model().clearCurrentPosition();
+		this._syncCrosshair();
 	}
 
 	private _tryExitTrackingMode(): void {
