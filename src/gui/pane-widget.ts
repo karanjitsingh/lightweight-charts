@@ -389,6 +389,7 @@ export class PaneWidget implements IDestroyable {
 
 		if (!isMobile) {
 			this._clearCrosshairPosition();
+			this._syncCrosshair();
 		}
 	}
 
@@ -741,7 +742,6 @@ export class PaneWidget implements IDestroyable {
 
 	private _clearCrosshairPosition(): void {
 		this._model().clearCurrentPosition();
-		this._syncCrosshair();
 	}
 
 	private _tryExitTrackingMode(): void {
