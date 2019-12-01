@@ -36,6 +36,10 @@ interface HitTestPaneViewResult {
 }
 
 export class PaneWidget implements IDestroyable {
+	private static PANE_COUNTER: number = 0;
+	private static PANE_MAP: Map<number, PaneWidget> = new Map();
+
+	private _paneId: number;
 	private readonly _chart: ChartWidget;
 	private _state: Pane | null;
 	private _size: Size = new Size(0, 0);
@@ -61,6 +65,9 @@ export class PaneWidget implements IDestroyable {
 
 	public constructor(chart: ChartWidget, state: Pane) {
 		this._chart = chart;
+
+		this._paneId = PaneWidget.PANE_COUNTER++;
+		PaneWidget.PANE_MAP.set(this._paneId, this);
 
 		this._state = state;
 		this._state.onDestroyed().subscribe(this._onStateDestroyed.bind(this), this, true);
@@ -126,6 +133,8 @@ export class PaneWidget implements IDestroyable {
 		if (this._state !== null) {
 			this._state.onDestroyed().unsubscribeAll(this);
 		}
+
+		PaneWidget.PANE_MAP.delete(this._paneId);
 
 		this._mouseEventHandler.destroy();
 	}
@@ -253,6 +262,8 @@ export class PaneWidget implements IDestroyable {
 			if (hitTest !== null && hitTest.view.moveHandler !== undefined) {
 				hitTest.view.moveHandler(x, y);
 			}
+
+			this.syncCrosshair(x);
 		}
 	}
 
@@ -502,6 +513,24 @@ export class PaneWidget implements IDestroyable {
 
 	public priceAxisWidget(): PriceAxisWidget | null {
 		return this._priceAxisWidget;
+	}
+
+	public setCrosshairPositionByTime(time: number): void {
+		const coordinate = this._model().timeScale().timeToCoordinate(time * 1000);
+		this._setCrosshairPosition(coordinate, 0 as Coordinate);
+	}
+
+	private syncCrosshair(x: Coordinate): void {
+		const index = this._model().timeScale().coordinateToIndex(x);
+		const time = this._model().timeScale().indexToUserTime(index);
+
+		if (time) {
+			PaneWidget.PANE_MAP.forEach((pane: PaneWidget, id: number) => {
+				if (this._paneId !== id) {
+					pane.setCrosshairPositionByTime(time.timestamp);
+				}
+			});
+		}
 	}
 
 	private _backgroundColor(): string {

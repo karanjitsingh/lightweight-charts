@@ -218,6 +218,16 @@ export class TimeScale {
 		return this._tickMarks.indexToTime(index);
 	}
 
+	public timeToCoordinate(time: number): Coordinate {
+		if (this.isEmpty() || !isInteger(time)) {
+			return 0 as Coordinate;
+		}
+
+		const index = this._tickMarks.nearestIndex(time) as TimePointIndex;
+
+		return this.indexToCoordinate(index);
+	}
+
 	public coordinateToIndex(x: Coordinate): TimePointIndex {
 		return Math.ceil(this._coordinateToFloatIndex(x)) as TimePointIndex;
 	}

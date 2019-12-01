@@ -102,7 +102,7 @@ export class TickMarks {
 	public nearestIndex(time: number): number {
 		let left = this._minIndex;
 		let right = this._maxIndex;
-		while (right - left > 2) {
+		while (right - left >= 2) {
 			if (ensureDefined(this._marksByIndex.get(left)).time.timestamp * 1000 === time) {
 				return left;
 			}
@@ -119,7 +119,13 @@ export class TickMarks {
 			}
 		}
 
-		return left;
+		const average = ((ensureDefined(this._marksByIndex.get(left)).time.timestamp * 1000) + ensureDefined(this._marksByIndex.get(right)).time.timestamp * 1000) / 2;
+
+		if (time > average) {
+			return right;
+		} else {
+			return left;
+		}
 	}
 
 	public build(spacing: number, maxWidth: number): TickMark[] {
