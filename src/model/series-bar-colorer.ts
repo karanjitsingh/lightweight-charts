@@ -71,7 +71,7 @@ export class SeriesBarColorer {
 		const borderDownColor = downColor;
 
 		const currentBar = ensureNotNull(this._findBar(barIndex, precomputedBars));
-		const isUp = ensure(currentBar.value[SeriesPlotIndex.Open]) <= ensure(currentBar.value[SeriesPlotIndex.Close]);
+		const isUp = ensure(currentBar.plot.value[SeriesPlotIndex.Open]) <= ensure(currentBar.plot.value[SeriesPlotIndex.Close]);
 
 		result.barColor = isUp ? upColor : downColor;
 		result.barBorderColor = isUp ? borderUpColor : borderDownColor;
@@ -91,7 +91,7 @@ export class SeriesBarColorer {
 		const wickDownColor = candlestickStyle.wickDownColor;
 
 		const currentBar = ensureNotNull(this._findBar(barIndex, precomputedBars));
-		const isUp = ensure(currentBar.value[SeriesPlotIndex.Open]) <= ensure(currentBar.value[SeriesPlotIndex.Close]);
+		const isUp = ensure(currentBar.plot.value[SeriesPlotIndex.Open]) <= ensure(currentBar.plot.value[SeriesPlotIndex.Close]);
 
 		result.barColor = isUp ? upColor : downColor;
 		result.barBorderColor = isUp ? borderUpColor : borderDownColor;
@@ -117,7 +117,7 @@ export class SeriesBarColorer {
 	private _histogramStyle(histogramStyle: HistogramStyleOptions, barIndex: TimePointIndex, precomputedBars?: PrecomputedBars): BarColorerStyle {
 		const result = { ...emptyResult };
 		const currentBar = ensureNotNull(this._findBar(barIndex, precomputedBars));
-		const colorValue = currentBar.value[SeriesPlotIndex.Color];
+		const colorValue = currentBar.plot.value[SeriesPlotIndex.Color];
 		if (colorValue != null) {
 			const palette = ensureNotNull(this._series.palette());
 			result.barColor = palette.colorByIndex(colorValue);
@@ -127,7 +127,7 @@ export class SeriesBarColorer {
 		return result;
 	}
 
-	private _getSeriesBars(): PlotList<TimePoint, Bar['value']> {
+	private _getSeriesBars(): PlotList<TimePoint, Bar['plot']> {
 		return this._series.bars();
 	}
 

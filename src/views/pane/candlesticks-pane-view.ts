@@ -44,6 +44,7 @@ export class SeriesCandlesticksPaneView extends BarsPaneViewBase<'Candlestick', 
 			color: style.barColor,
 			wickColor: style.barWickColor,
 			borderColor: style.barBorderColor,
+			glyphs: bar.plot.glyphs,
 		};
 	}
 }

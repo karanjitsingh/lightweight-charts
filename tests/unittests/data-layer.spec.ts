@@ -24,7 +24,7 @@ function createSeriesMock<T extends SeriesType = 'Line'>(seriesType?: T): Series
 
 // just for tests
 function dataItemAt(time: TimedData['time']): BarData & LineData & HistogramData {
-	return { time, value: 0, open: 0, high: 0, low: 0, close: 0 };
+	return { time, value: 0, open: 0, high: 0, low: 0, close: 0, glyphs: [] };
 }
 
 describe('DataLayer', () => {
@@ -388,15 +388,16 @@ describe('DataLayer', () => {
 				low: 5,
 				close: 11,
 				value: 100,
+				glyphs: [],
 			};
 
 			const packet = dataLayer.setSeriesData(series, [item]);
 			const update = ensureDefined(packet.timeScaleUpdate.seriesUpdates.get(series));
 
-			expect(update.update[0].value[SeriesPlotIndex.Open]).to.be.equal(item.open);
-			expect(update.update[0].value[SeriesPlotIndex.High]).to.be.equal(item.high);
-			expect(update.update[0].value[SeriesPlotIndex.Low]).to.be.equal(item.low);
-			expect(update.update[0].value[SeriesPlotIndex.Close]).to.be.equal(item.close);
+			expect(update.update[0].plot.value[SeriesPlotIndex.Open]).to.be.equal(item.open);
+			expect(update.update[0].plot.value[SeriesPlotIndex.High]).to.be.equal(item.high);
+			expect(update.update[0].plot.value[SeriesPlotIndex.Low]).to.be.equal(item.low);
+			expect(update.update[0].plot.value[SeriesPlotIndex.Close]).to.be.equal(item.close);
 		}
 	});
 });

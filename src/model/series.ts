@@ -72,7 +72,7 @@ export interface LastValueDataResultWithRawPrice extends LastValueDataResultWith
 
 export type LastValueDataResultWithoutRawPrice = LastValueDataResultWithoutData | LastValueDataResultWithData;
 
-export type BarFunction = (bar: Bar['value']) => BarPrice;
+export type BarFunction = (bar: Bar['plot']) => BarPrice;
 
 export interface MarkerData {
 	price: BarPrice;
@@ -189,7 +189,7 @@ export class Series<T extends SeriesType = SeriesType> extends PriceDataSource i
 			lastIndex = endBar.index;
 		}
 
-		const price = plot !== undefined ? bar.value[plot] as number : this._barFunction(bar.value);
+		const price = plot !== undefined ? bar.plot.value[plot] as number : this._barFunction(bar.plot);
 		const barColorer = this.barColorer();
 		const style = barColorer.barStyle(lastIndex, { value: bar });
 		const floatCoordinate = priceScale.priceToCoordinate(price, firstValue.value, true);
@@ -274,7 +274,7 @@ export class Series<T extends SeriesType = SeriesType> extends PriceDataSource i
 		this.model().updateSource(this);
 	}
 
-	public setData(data: ReadonlyArray<PlotRow<Bar['time'], Bar['value']>>): void {
+	public setData(data: ReadonlyArray<PlotRow<Bar['time'], Bar['plot']>>): void {
 		this._data.clear();
 		this._data.bars().merge(data);
 		this._recalculateMarkers();
@@ -308,7 +308,7 @@ export class Series<T extends SeriesType = SeriesType> extends PriceDataSource i
 		return this._indexedMarkers;
 	}
 
-	public updateData(data: ReadonlyArray<PlotRow<Bar['time'], Bar['value']>>): void {
+	public updateData(data: ReadonlyArray<PlotRow<Bar['time'], Bar['plot']>>): void {
 		this._data.bars().merge(data);
 		this._recalculateMarkers();
 		if (this._paneView !== null) {
@@ -337,7 +337,7 @@ export class Series<T extends SeriesType = SeriesType> extends PriceDataSource i
 		}
 
 		return {
-			value: this._barFunction(bar.value),
+			value: this._barFunction(bar.plot),
 			timePoint: bar.time,
 		};
 	}
@@ -352,7 +352,7 @@ export class Series<T extends SeriesType = SeriesType> extends PriceDataSource i
 		return this.data().search(startTimePoint, PlotRowSearchMode.NearestRight);
 	}
 
-	public bars(): PlotList<Bar['time'], Bar['value']> {
+	public bars(): PlotList<Bar['time'], Bar['plot']> {
 		return this._data.bars();
 	}
 
@@ -361,7 +361,7 @@ export class Series<T extends SeriesType = SeriesType> extends PriceDataSource i
 		return res ? res.index : null;
 	}
 
-	public nearestData(index: TimePointIndex, options?: PlotRowSearchMode): PlotRow<Bar['time'], Bar['value']> | null {
+	public nearestData(index: TimePointIndex, options?: PlotRowSearchMode): PlotRow<Bar['time'], Bar['plot']> | null {
 		if (!isInteger(index)) {
 			return null;
 		}
@@ -376,13 +376,13 @@ export class Series<T extends SeriesType = SeriesType> extends PriceDataSource i
 		}
 		if (this._seriesType === 'Bar' || this._seriesType === 'Candlestick') {
 			return {
-				open: prices.value[SeriesPlotIndex.Open] as BarPrice,
-				high: prices.value[SeriesPlotIndex.High] as BarPrice,
-				low: prices.value[SeriesPlotIndex.Low] as BarPrice,
-				close: prices.value[SeriesPlotIndex.Close] as BarPrice,
+				open: prices.plot.value[SeriesPlotIndex.Open] as BarPrice,
+				high: prices.plot.value[SeriesPlotIndex.High] as BarPrice,
+				low: prices.plot.value[SeriesPlotIndex.Low] as BarPrice,
+				close: prices.plot.value[SeriesPlotIndex.Close] as BarPrice,
 			};
 		} else {
-			return this.barFunction()(prices.value);
+			return this.barFunction()(prices.plot);
 		}
 	}
 
@@ -485,7 +485,7 @@ export class Series<T extends SeriesType = SeriesType> extends PriceDataSource i
 		if (bar === null) {
 			return null;
 		}
-		const price = this._barFunction(bar.value);
+		const price = this._barFunction(bar.plot);
 		const radius = this._markerRadius();
 		return { price, radius };
 	}

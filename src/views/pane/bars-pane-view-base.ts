@@ -28,10 +28,10 @@ export abstract class BarsPaneViewBase<TSeriesType extends 'Bar' | 'Candlestick'
 	protected _createDefaultItem(time: TimePointIndex, bar: Bar, colorer: SeriesBarColorer): BarCandlestickItemBase {
 		return {
 			time: time,
-			open: bar.value[SeriesPlotIndex.Open] as BarPrice,
-			high: bar.value[SeriesPlotIndex.High] as BarPrice,
-			low: bar.value[SeriesPlotIndex.Low] as BarPrice,
-			close: bar.value[SeriesPlotIndex.Close] as BarPrice,
+			open: bar.plot.value[SeriesPlotIndex.Open] as BarPrice,
+			high: bar.plot.value[SeriesPlotIndex.High] as BarPrice,
+			low: bar.plot.value[SeriesPlotIndex.Low] as BarPrice,
+			close: bar.plot.value[SeriesPlotIndex.Close] as BarPrice,
 			x: NaN as Coordinate,
 			openY: NaN as Coordinate,
 			highY: NaN as Coordinate,

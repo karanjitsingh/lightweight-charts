@@ -40,7 +40,7 @@ export abstract class LinePaneViewBase<TSeriesType extends 'Line' | 'Area', Item
 		const newItems: ItemType[] = [];
 		const colorer = this._series.barColorer();
 		this._series.bars().each((index: TimePointIndex, bar: Bar) => {
-			const value = barValueGetter(bar.value);
+			const value = barValueGetter(bar.plot);
 			const item = this._createRawItem(index, value, colorer);
 			newItems.push(item);
 			return false;

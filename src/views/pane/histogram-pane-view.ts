@@ -72,8 +72,8 @@ export class SeriesHistogramPaneView extends SeriesPaneViewBase<'Histogram', Tim
 		const defaultColor = this._series.options().color;
 
 		this._series.bars().each((index: TimePointIndex, bar: Bar) => {
-			const value = barValueGetter(bar.value);
-			const paletteColorIndex = bar.value[SeriesPlotIndex.Color];
+			const value = barValueGetter(bar.plot);
+			const paletteColorIndex = bar.plot.value[SeriesPlotIndex.Color];
 
 			const item = createRawItem(index, value);
 			const color = paletteColorIndex != null ? palette.colorByIndex(paletteColorIndex) : defaultColor;

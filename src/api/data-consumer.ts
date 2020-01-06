@@ -1,5 +1,6 @@
 import { isNumber, isString } from '../helpers/strict-type-checks';
 
+import { Glyph } from '../model/glyph';
 import { Series } from '../model/series';
 import { SeriesType } from '../model/series-options';
 import { BusinessDay, UTCTimestamp } from '../model/time-data';
@@ -43,6 +44,8 @@ export interface BarData {
 	high: number;
 	low: number;
 	close: number;
+
+	glyphs: Glyph[];
 }
 
 export interface SeriesDataItemTypeMap {

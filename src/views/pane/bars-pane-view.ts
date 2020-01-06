@@ -40,6 +40,7 @@ export class SeriesBarsPaneView extends BarsPaneViewBase<'Bar', BarItem> {
 		return {
 			...this._createDefaultItem(time, bar, colorer),
 			color: colorer.barStyle(time).barColor,
+			glyphs: bar.plot.glyphs,
 		};
 	}
 

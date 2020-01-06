@@ -2,7 +2,7 @@ import { lowerbound, upperbound } from '../helpers/algorithms';
 import { assert, ensureNotNull } from '../helpers/assertions';
 import { Nominal } from '../helpers/nominal';
 
-import { PlotRow, PlotValue } from '../model/plot-data';
+import { Plot, PlotRow, PlotValue } from '../model/plot-data';
 import { TimePointIndex } from '../model/time-data';
 
 export const enum PlotRowSearchMode {
@@ -11,7 +11,7 @@ export const enum PlotRowSearchMode {
 	NearestRight = 1,
 }
 
-export type EnumeratingFunction<TimeType, PlotValueTuple extends PlotValue[]> = (index: TimePointIndex, bar: PlotRow<TimeType, PlotValueTuple>) => boolean;
+export type EnumeratingFunction<TimeType, TPlot extends Plot> = (index: TimePointIndex, bar: PlotRow<TimeType, TPlot>) => boolean;
 
 export interface PlotInfo {
 	name: string;
@@ -20,9 +20,9 @@ export interface PlotInfo {
 
 export type PlotInfoList = ReadonlyArray<PlotInfo>;
 
-export type PlotFunctionMap<PlotValueTuple extends PlotValue[]> = Map<string, (row: PlotValueTuple) => PlotValue>;
+export type PlotFunctionMap<TPlot extends Plot> = Map<string, (row: TPlot) => PlotValue>;
 
-type EmptyValuePredicate<PlotValueTuple extends PlotValue[]> = (value: PlotValueTuple) => boolean;
+type EmptyValuePredicate<TPlot extends Plot> = (plot: TPlot) => boolean;
 
 export interface MinMax {
 	min: number;
@@ -38,9 +38,9 @@ const CHUNK_SIZE = 30;
  * PlotList is an array of plot rows
  * each plot row consists of key (index in timescale) and plot value map
  */
-export class PlotList<TimeType, PlotValueTuple extends PlotValue[] = PlotValue[]> {
+export class PlotList<TimeType, TPlot extends Plot = Plot> {
 	// TODO: should be renamed to _rows, but the current name is frozen because of myriads of references to it
-	private _items: PlotRow<TimeType, PlotValueTuple>[] = [];
+	private _items: PlotRow<TimeType, TPlot>[] = [];
 	// some PlotList instances are just readonly views of sub-range of data stored in another PlotList
 	// _start and _end fields are used to implement such views
 	private _start: number = 0;
@@ -48,12 +48,12 @@ export class PlotList<TimeType, PlotValueTuple extends PlotValue[] = PlotValue[]
 	private _end: number = 0;
 	private _shareRead: boolean = false;
 	private _minMaxCache: Map<string, Map<number, MinMax | null>> = new Map();
-	private _rowSearchCache: Map<TimePointIndex, Map<PlotRowSearchMode, PlotRow<TimeType, PlotValueTuple>>> = new Map();
-	private _rowSearchCacheWithoutEmptyValues: Map<TimePointIndex, Map<PlotRowSearchMode, PlotRow<TimeType, PlotValueTuple>>> = new Map();
-	private readonly _plotFunctions: PlotFunctionMap<PlotValueTuple>;
-	private readonly _emptyValuePredicate: EmptyValuePredicate<PlotValueTuple> | null;
+	private _rowSearchCache: Map<TimePointIndex, Map<PlotRowSearchMode, PlotRow<TimeType, TPlot>>> = new Map();
+	private _rowSearchCacheWithoutEmptyValues: Map<TimePointIndex, Map<PlotRowSearchMode, PlotRow<TimeType, TPlot>>> = new Map();
+	private readonly _plotFunctions: PlotFunctionMap<TPlot>;
+	private readonly _emptyValuePredicate: EmptyValuePredicate<TPlot> | null;
 
-	public constructor(plotFunctions: PlotFunctionMap<PlotValueTuple> | null = null, emptyValuePredicate: EmptyValuePredicate<PlotValueTuple> | null = null) {
+	public constructor(plotFunctions: PlotFunctionMap<TPlot> | null = null, emptyValuePredicate: EmptyValuePredicate<TPlot> | null = null) {
 		this._plotFunctions = plotFunctions || new Map();
 		this._emptyValuePredicate = emptyValuePredicate;
 	}
@@ -69,12 +69,12 @@ export class PlotList<TimeType, PlotValueTuple extends PlotValue[] = PlotValue[]
 	}
 
 	// @returns First row
-	public first(): PlotRow<TimeType, PlotValueTuple> | null {
+	public first(): PlotRow<TimeType, TPlot> | null {
 		return this.size() > 0 ? this._items[this._start as PlotRowIndex] : null;
 	}
 
 	// @returns Last row
-	public last(): PlotRow<TimeType, PlotValueTuple> | null {
+	public last(): PlotRow<TimeType, TPlot> | null {
 		return this.size() > 0 ? this._items[(this._end - 1) as PlotRowIndex] : null;
 	}
 
@@ -98,19 +98,19 @@ export class PlotList<TimeType, PlotValueTuple extends PlotValue[] = PlotValue[]
 		return this._search(index, PlotRowSearchMode.Exact) !== null;
 	}
 
-	public valueAt(index: TimePointIndex): PlotRow<TimeType, PlotValueTuple> | null {
+	public valueAt(index: TimePointIndex): PlotRow<TimeType, TPlot> | null {
 		return this.search(index);
 	}
 
 	/**
 	 * @returns true if new index is added or false if existing index is updated
 	 */
-	public add(index: TimePointIndex, time: TimeType, value: PlotValueTuple): boolean {
+	public add(index: TimePointIndex, time: TimeType, plot: TPlot): boolean {
 		if (this._shareRead) {
 			return false;
 		}
 
-		const row = { index: index, value: value, time: time };
+		const row = { index: index, plot: plot, time: time };
 		const pos = this._search(index, PlotRowSearchMode.Exact);
 		this._rowSearchCache.clear();
 		this._rowSearchCacheWithoutEmptyValues.clear();
@@ -125,7 +125,7 @@ export class PlotList<TimeType, PlotValueTuple extends PlotValue[] = PlotValue[]
 		}
 	}
 
-	public search(index: TimePointIndex, searchMode: PlotRowSearchMode = PlotRowSearchMode.Exact, skipEmptyValues?: boolean): PlotRow<TimeType, PlotValueTuple> | null {
+	public search(index: TimePointIndex, searchMode: PlotRowSearchMode = PlotRowSearchMode.Exact, skipEmptyValues?: boolean): PlotRow<TimeType, TPlot> | null {
 		const pos = this._search(index, searchMode, skipEmptyValues);
 		if (pos === null) {
 			return null;
@@ -136,7 +136,7 @@ export class PlotList<TimeType, PlotValueTuple extends PlotValue[] = PlotValue[]
 		return {
 			index: this._indexAt(pos),
 			time: item.time,
-			value: item.value,
+			plot: item.plot,
 		};
 	}
 
@@ -145,7 +145,7 @@ export class PlotList<TimeType, PlotValueTuple extends PlotValue[] = PlotValue[]
 	 * Stops iteration if callback function returns true.
 	 * @param fun Callback function on each element function(index, value): boolean
 	 */
-	public each(fun: EnumeratingFunction<TimeType, PlotValueTuple>): void {
+	public each(fun: EnumeratingFunction<TimeType, TPlot>): void {
 		for (let i = this._start; i < this._end; ++i) {
 			const index = this._indexAt(i as PlotRowIndex);
 			const item = this._valueAt(i as PlotRowIndex);
@@ -158,8 +158,8 @@ export class PlotList<TimeType, PlotValueTuple extends PlotValue[] = PlotValue[]
 	/**
 	 * @returns Readonly collection of elements in range
 	 */
-	public range(start: TimePointIndex, end: TimePointIndex): PlotList<TimeType, PlotValueTuple> {
-		const copy = new PlotList<TimeType, PlotValueTuple>(this._plotFunctions, this._emptyValuePredicate);
+	public range(start: TimePointIndex, end: TimePointIndex): PlotList<TimeType, TPlot> {
+		const copy = new PlotList<TimeType, TPlot>(this._plotFunctions, this._emptyValuePredicate);
 		copy._items = this._items;
 		copy._start = this._lowerbound(start);
 		copy._end = this._upperbound(end);
@@ -186,7 +186,7 @@ export class PlotList<TimeType, PlotValueTuple extends PlotValue[] = PlotValue[]
 		return result;
 	}
 
-	public merge(plotRows: ReadonlyArray<PlotRow<TimeType, PlotValueTuple>>): PlotRow<TimeType, PlotValueTuple> | null {
+	public merge(plotRows: ReadonlyArray<PlotRow<TimeType, TPlot>>): PlotRow<TimeType, TPlot> | null {
 		if (this._shareRead) {
 			return null;
 		}
@@ -214,7 +214,7 @@ export class PlotList<TimeType, PlotValueTuple extends PlotValue[] = PlotValue[]
 		return this._merge(plotRows);
 	}
 
-	public remove(start: TimePointIndex): PlotRow<TimeType, PlotValueTuple> | null {
+	public remove(start: TimePointIndex): PlotRow<TimeType, TPlot> | null {
 		if (this._shareRead) {
 			return null;
 		}
@@ -239,7 +239,7 @@ export class PlotList<TimeType, PlotValueTuple extends PlotValue[] = PlotValue[]
 		return this._items[offset].index;
 	}
 
-	private _valueAt(offset: PlotRowIndex): PlotRow<TimeType, PlotValueTuple> {
+	private _valueAt(offset: PlotRowIndex): PlotRow<TimeType, TPlot> {
 		return this._items[offset];
 	}
 
@@ -276,7 +276,7 @@ export class PlotList<TimeType, PlotValueTuple extends PlotValue[] = PlotValue[]
 
 	private _nonEmptyNearestRight(index: PlotRowIndex): PlotRowIndex | null {
 		const predicate = ensureNotNull(this._emptyValuePredicate);
-		while (index < this._end && predicate(this._valueAt(index).value)) {
+		while (index < this._end && predicate(this._valueAt(index).plot)) {
 			index = index + 1 as PlotRowIndex;
 		}
 
@@ -285,7 +285,7 @@ export class PlotList<TimeType, PlotValueTuple extends PlotValue[] = PlotValue[]
 
 	private _nonEmptyNearestLeft(index: PlotRowIndex): PlotRowIndex | null {
 		const predicate = ensureNotNull(this._emptyValuePredicate);
-		while (index >= this._start && predicate(this._valueAt(index).value)) {
+		while (index >= this._start && predicate(this._valueAt(index).plot)) {
 			index = index - 1 as PlotRowIndex;
 		}
 
@@ -330,7 +330,7 @@ export class PlotList<TimeType, PlotValueTuple extends PlotValue[] = PlotValue[]
 		return lowerbound(
 			this._items,
 			index,
-			(a: PlotRow<TimeType, PlotValueTuple>, b: TimePointIndex) => { return a.index < b; },
+			(a: PlotRow<TimeType, TPlot>, b: TimePointIndex) => { return a.index < b; },
 			this._start,
 			this._end
 		);
@@ -340,7 +340,7 @@ export class PlotList<TimeType, PlotValueTuple extends PlotValue[] = PlotValue[]
 		return upperbound(
 			this._items,
 			index,
-			(a: TimePointIndex, b: PlotRow<TimeType, PlotValueTuple>) => { return b.index > a; },
+			(a: TimePointIndex, b: PlotRow<TimeType, TPlot>) => { return b.index > a; },
 			this._start,
 			this._end
 		);
@@ -359,7 +359,7 @@ export class PlotList<TimeType, PlotValueTuple extends PlotValue[] = PlotValue[]
 		}
 
 		for (let i = startIndex; i < endIndex; i++) {
-			const values = this._items[i].value;
+			const values = this._items[i].plot;
 
 			const v = func(values);
 			if (v === undefined || v === null || Number.isNaN(v)) {
@@ -382,12 +382,12 @@ export class PlotList<TimeType, PlotValueTuple extends PlotValue[] = PlotValue[]
 		return result;
 	}
 
-	private _invalidateCacheForRow(row: PlotRow<TimeType, PlotValueTuple>): void {
+	private _invalidateCacheForRow(row: PlotRow<TimeType, TPlot>): void {
 		const chunkIndex = Math.floor(row.index / CHUNK_SIZE);
 		this._minMaxCache.forEach((cacheItem: Map<number, MinMax | null>) => cacheItem.delete(chunkIndex));
 	}
 
-	private _prepend(plotRows: ReadonlyArray<PlotRow<TimeType, PlotValueTuple>>): PlotRow<TimeType, PlotValueTuple> {
+	private _prepend(plotRows: ReadonlyArray<PlotRow<TimeType, TPlot>>): PlotRow<TimeType, TPlot> {
 		assert(!this._shareRead, 'collection should not be readonly');
 		assert(plotRows.length !== 0, 'plotRows should not be empty');
 
@@ -403,7 +403,7 @@ export class PlotList<TimeType, PlotValueTuple extends PlotValue[] = PlotValue[]
 		return plotRows[0];
 	}
 
-	private _append(plotRows: ReadonlyArray<PlotRow<TimeType, PlotValueTuple>>): PlotRow<TimeType, PlotValueTuple> {
+	private _append(plotRows: ReadonlyArray<PlotRow<TimeType, TPlot>>): PlotRow<TimeType, TPlot> {
 		assert(!this._shareRead, 'collection should not be readonly');
 		assert(plotRows.length !== 0, 'plotRows should not be empty');
 
@@ -419,7 +419,7 @@ export class PlotList<TimeType, PlotValueTuple extends PlotValue[] = PlotValue[]
 		return plotRows[0];
 	}
 
-	private _updateLast(plotRow: PlotRow<TimeType, PlotValueTuple>): void {
+	private _updateLast(plotRow: PlotRow<TimeType, TPlot>): void {
 		assert(!this.isEmpty(), 'plot list should not be empty');
 		const currentLastRow = this._items[this._end - 1];
 		assert(currentLastRow.index === plotRow.index, 'last row index should match new row index');
@@ -431,7 +431,7 @@ export class PlotList<TimeType, PlotValueTuple extends PlotValue[] = PlotValue[]
 		this._items[this._end - 1] = plotRow;
 	}
 
-	private _merge(plotRows: ReadonlyArray<PlotRow<TimeType, PlotValueTuple>>): PlotRow<TimeType, PlotValueTuple> {
+	private _merge(plotRows: ReadonlyArray<PlotRow<TimeType, TPlot>>): PlotRow<TimeType, TPlot> {
 		assert(plotRows.length !== 0, 'plot rows should not be empty');
 
 		this._rowSearchCache.clear();
@@ -531,11 +531,11 @@ export function mergeMinMax(first: MinMax | null, second: MinMax | null): MinMax
  *
  * NOTE: Time and memory complexity are O(N+M).
  */
-export function mergePlotRows<TimeType, PlotValueTuple extends PlotValue[] = PlotValue[]>(originalPlotRows: ReadonlyArray<PlotRow<TimeType, PlotValueTuple>>, newPlotRows: ReadonlyArray<PlotRow<TimeType, PlotValueTuple>>): PlotRow<TimeType, PlotValueTuple>[] {
+export function mergePlotRows<TimeType, TPlot extends Plot = Plot>(originalPlotRows: ReadonlyArray<PlotRow<TimeType, TPlot>>, newPlotRows: ReadonlyArray<PlotRow<TimeType, TPlot>>): PlotRow<TimeType, TPlot>[] {
 	const newArraySize = calcMergedArraySize(originalPlotRows, newPlotRows);
 
 	// tslint:disable-next-line:prefer-array-literal
-	const result = new Array<PlotRow<TimeType, PlotValueTuple>>(newArraySize);
+	const result = new Array<PlotRow<TimeType, TPlot>>(newArraySize);
 
 	let originalRowsIndex = 0;
 	let newRowsIndex = 0;
@@ -574,9 +574,9 @@ export function mergePlotRows<TimeType, PlotValueTuple extends PlotValue[] = Plo
 	return result;
 }
 
-function calcMergedArraySize<TimeType, PlotValueTuple extends PlotValue[] = PlotValue[]>(
-	firstPlotRows: ReadonlyArray<PlotRow<TimeType, PlotValueTuple>>,
-	secondPlotRows: ReadonlyArray<PlotRow<TimeType, PlotValueTuple>>): number {
+function calcMergedArraySize<TimeType, TPlot extends Plot = Plot>(
+	firstPlotRows: ReadonlyArray<PlotRow<TimeType, TPlot>>,
+	secondPlotRows: ReadonlyArray<PlotRow<TimeType, TPlot>>): number {
 	const firstPlotsSize = firstPlotRows.length;
 	const secondPlotsSize = secondPlotRows.length;
 

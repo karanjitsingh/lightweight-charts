@@ -2,39 +2,47 @@ import { expect } from 'chai';
 import { describe, it } from 'mocha';
 
 import { ensure, ensureNotNull } from '../../src/helpers/assertions';
-import { PlotRow, PlotValue } from '../../src/model/plot-data';
+import { Plot, PlotRow, PlotValue } from '../../src/model/plot-data';
 import { mergePlotRows, PlotInfoList, PlotList, PlotRowSearchMode } from '../../src/model/plot-list';
 import { TimePointIndex, UTCTimestamp } from '../../src/model/time-data';
 
-type PlotValueTuple = [PlotValue, PlotValue, PlotValue];
-type OHLCTuple = [PlotValue, PlotValue, PlotValue, PlotValue];
-type PlotValueTuple5 = [PlotValue, PlotValue, PlotValue, PlotValue, PlotValue];
+interface Plot3 extends Plot {
+	value: [PlotValue, PlotValue, PlotValue];
+}
 
-function row(i: TimePointIndex): PlotRow<UTCTimestamp, PlotValueTuple> {
-	return { index: i, value: [i * 3, i * 3 + 1, i * 3 + 2] as PlotValueTuple, time: 0 as UTCTimestamp };
+interface OHLCPlot extends Plot {
+	value: [PlotValue, PlotValue, PlotValue, PlotValue];
+}
+
+interface Plot5 extends Plot {
+	value: [PlotValue, PlotValue, PlotValue, PlotValue, PlotValue];
+}
+
+function row(i: TimePointIndex): PlotRow<UTCTimestamp, Plot3> {
+	return { index: i, plot: { value: [i * 3, i * 3 + 1, i * 3 + 2] }, time: 0 as UTCTimestamp };
 }
 
 describe('PlotList', () => {
-	const p = new PlotList<UTCTimestamp, PlotValueTuple>(new Map());
+	const p = new PlotList<UTCTimestamp, Plot3>(new Map());
 
 	beforeEach(() => {
 		p.clear();
-		p.add(-3 as TimePointIndex, 1 as UTCTimestamp, [1, 2, 3]);
-		p.add(-3 as TimePointIndex, 2 as UTCTimestamp, [1, 2, 3]);
-		p.add(0 as TimePointIndex, 3 as UTCTimestamp, [10, 20, 30]);
-		p.add(3 as TimePointIndex, 4 as UTCTimestamp, [100, 200, 300]);
+		p.add(-3 as TimePointIndex, 1 as UTCTimestamp, { value: [1, 2, 3] });
+		p.add(-3 as TimePointIndex, 2 as UTCTimestamp, { value: [1, 2, 3] });
+		p.add(0 as TimePointIndex, 3 as UTCTimestamp, { value: [10, 20, 30] });
+		p.add(3 as TimePointIndex, 4 as UTCTimestamp, { value: [100, 200, 300] });
 	});
 
 	it('should contain all plot values that was previously added', () => {
 		expect(p.size()).to.be.equal(3);
 		expect(p.contains(-3 as TimePointIndex)).to.be.equal(true);
-		expect(ensureNotNull(p.valueAt(-3 as TimePointIndex)).value).to.include.ordered.members([1, 2, 3]);
+		expect(ensureNotNull(p.valueAt(-3 as TimePointIndex)).plot.value).to.include.ordered.members([1, 2, 3]);
 		expect(ensureNotNull(p.valueAt(-3 as TimePointIndex)).time).to.be.equal(2);
 		expect(p.contains(0 as TimePointIndex)).to.be.equal(true);
-		expect(ensureNotNull(p.valueAt(0 as TimePointIndex)).value).to.include.ordered.members([10, 20, 30]);
+		expect(ensureNotNull(p.valueAt(0 as TimePointIndex)).plot.value).to.include.ordered.members([10, 20, 30]);
 		expect(ensureNotNull(p.valueAt(0 as TimePointIndex)).time).to.be.equal(3);
 		expect(p.contains(3 as TimePointIndex)).to.be.equal(true);
-		expect(ensureNotNull(p.valueAt(3 as TimePointIndex)).value).to.include.ordered.members([100, 200, 300]);
+		expect(ensureNotNull(p.valueAt(3 as TimePointIndex)).plot.value).to.include.ordered.members([100, 200, 300]);
 		expect(ensureNotNull(p.valueAt(3 as TimePointIndex)).time).to.be.equal(4);
 	});
 
@@ -43,16 +51,16 @@ describe('PlotList', () => {
 	});
 
 	it('should preserve the order of plot values', () => {
-		const items: PlotRow<UTCTimestamp, PlotValueTuple>[] = [];
-		p.each((index: TimePointIndex, value: PlotRow<UTCTimestamp, PlotValueTuple>) => {
+		const items: PlotRow<UTCTimestamp, Plot3>[] = [];
+		p.each((index: TimePointIndex, value: PlotRow<UTCTimestamp, Plot3>) => {
 			items.push(value);
 			return false;
 		});
 
 		expect(items.length).to.be.equal(3);
-		expect(items[0].value).to.include.ordered.members([1, 2, 3]);
-		expect(items[1].value).to.include.ordered.members([10, 20, 30]);
-		expect(items[2].value).to.include.ordered.members([100, 200, 300]);
+		expect(items[0].plot.value).to.include.ordered.members([1, 2, 3]);
+		expect(items[1].plot.value).to.include.ordered.members([10, 20, 30]);
+		expect(items[2].plot.value).to.include.ordered.members([100, 200, 300]);
 	});
 
 	it('should remove all plot values after calling \'clear\'', () => {
@@ -64,7 +72,7 @@ describe('PlotList', () => {
 
 	describe('merge', () => {
 		it('should correctly insert new and update existing plot values', () => {
-			const plotList = new PlotList<UTCTimestamp, PlotValueTuple>();
+			const plotList = new PlotList<UTCTimestamp, Plot3>();
 
 			// first merge
 			const earliestRow1 = plotList.merge([
@@ -89,23 +97,23 @@ describe('PlotList', () => {
 			expect(earliestRow3).to.deep.include(row(-5 as TimePointIndex));
 
 			// final result
-			const items: PlotRow<UTCTimestamp, PlotValueTuple>[] = [];
+			const items: PlotRow<UTCTimestamp, Plot3>[] = [];
 			plotList.each(
-				(index: TimePointIndex, value: PlotRow<UTCTimestamp, PlotValueTuple>) => {
+				(index: TimePointIndex, value: PlotRow<UTCTimestamp, Plot3>) => {
 					items.push(value);
 					return false;
 				}
 			);
 			expect(items.length).to.be.equal(5);
-			expect(items[0].value).to.include.ordered.members([-15, -14, -13]);
-			expect(items[1].value).to.include.ordered.members([0, 1, 2]);
-			expect(items[2].value).to.include.ordered.members([3, 4, 5]);
-			expect(items[3].value).to.include.ordered.members([6, 7, 8]);
-			expect(items[4].value).to.include.ordered.members([75, 76, 77]);
+			expect(items[0].plot.value).to.include.ordered.members([-15, -14, -13]);
+			expect(items[1].plot.value).to.include.ordered.members([0, 1, 2]);
+			expect(items[2].plot.value).to.include.ordered.members([3, 4, 5]);
+			expect(items[3].plot.value).to.include.ordered.members([6, 7, 8]);
+			expect(items[4].plot.value).to.include.ordered.members([75, 76, 77]);
 		});
 
 		it('should correctly prepend new plot values', () => {
-			const plotList = new PlotList<UTCTimestamp, PlotValueTuple>();
+			const plotList = new PlotList<UTCTimestamp, Plot3>();
 
 			plotList.merge([
 				row(0 as TimePointIndex),
@@ -120,15 +128,15 @@ describe('PlotList', () => {
 			expect(earliestRow2).to.deep.include(row(-2 as TimePointIndex));
 
 			expect(plotList.size()).to.be.equal(5);
-			expect(ensureNotNull(plotList.valueAt(-2 as TimePointIndex)).value).to.include.ordered.members(row(-2 as TimePointIndex).value);
-			expect(ensureNotNull(plotList.valueAt(-1 as TimePointIndex)).value).to.include.ordered.members(row(-1 as TimePointIndex).value);
-			expect(ensureNotNull(plotList.valueAt(0 as TimePointIndex)).value).to.include.ordered.members(row(0 as TimePointIndex).value);
-			expect(ensureNotNull(plotList.valueAt(1 as TimePointIndex)).value).to.include.ordered.members(row(1 as TimePointIndex).value);
-			expect(ensureNotNull(plotList.valueAt(2 as TimePointIndex)).value).to.include.ordered.members(row(2 as TimePointIndex).value);
+			expect(ensureNotNull(plotList.valueAt(-2 as TimePointIndex)).plot.value).to.include.ordered.members(row(-2 as TimePointIndex).plot.value);
+			expect(ensureNotNull(plotList.valueAt(-1 as TimePointIndex)).plot.value).to.include.ordered.members(row(-1 as TimePointIndex).plot.value);
+			expect(ensureNotNull(plotList.valueAt(0 as TimePointIndex)).plot.value).to.include.ordered.members(row(0 as TimePointIndex).plot.value);
+			expect(ensureNotNull(plotList.valueAt(1 as TimePointIndex)).plot.value).to.include.ordered.members(row(1 as TimePointIndex).plot.value);
+			expect(ensureNotNull(plotList.valueAt(2 as TimePointIndex)).plot.value).to.include.ordered.members(row(2 as TimePointIndex).plot.value);
 		});
 
 		it('should correctly append new plot values', () => {
-			const plotList = new PlotList<UTCTimestamp, PlotValueTuple>();
+			const plotList = new PlotList<UTCTimestamp, Plot3>();
 
 			plotList.merge([
 				row(0 as TimePointIndex),
@@ -143,24 +151,24 @@ describe('PlotList', () => {
 			expect(earliestRow2).to.deep.include(row(3 as TimePointIndex));
 
 			expect(plotList.size()).to.be.equal(5);
-			expect(ensureNotNull(plotList.valueAt(0 as TimePointIndex)).value).to.include.ordered.members(row(0 as TimePointIndex).value);
-			expect(ensureNotNull(plotList.valueAt(1 as TimePointIndex)).value).to.include.ordered.members(row(1 as TimePointIndex).value);
-			expect(ensureNotNull(plotList.valueAt(2 as TimePointIndex)).value).to.include.ordered.members(row(2 as TimePointIndex).value);
-			expect(ensureNotNull(plotList.valueAt(3 as TimePointIndex)).value).to.include.ordered.members(row(3 as TimePointIndex).value);
-			expect(ensureNotNull(plotList.valueAt(4 as TimePointIndex)).value).to.include.ordered.members(row(4 as TimePointIndex).value);
+			expect(ensureNotNull(plotList.valueAt(0 as TimePointIndex)).plot.value).to.include.ordered.members(row(0 as TimePointIndex).plot.value);
+			expect(ensureNotNull(plotList.valueAt(1 as TimePointIndex)).plot.value).to.include.ordered.members(row(1 as TimePointIndex).plot.value);
+			expect(ensureNotNull(plotList.valueAt(2 as TimePointIndex)).plot.value).to.include.ordered.members(row(2 as TimePointIndex).plot.value);
+			expect(ensureNotNull(plotList.valueAt(3 as TimePointIndex)).plot.value).to.include.ordered.members(row(3 as TimePointIndex).plot.value);
+			expect(ensureNotNull(plotList.valueAt(4 as TimePointIndex)).plot.value).to.include.ordered.members(row(4 as TimePointIndex).plot.value);
 		});
 	});
 
 	describe('remove', () => {
-		const p1 = new PlotList<UTCTimestamp, PlotValueTuple>();
+		const p1 = new PlotList<UTCTimestamp, Plot3>();
 
 		beforeEach(() => {
 			p1.clear();
-			p1.add(-9 as TimePointIndex, 1 as UTCTimestamp, [1, 2, 3]);
-			p1.add(-5 as TimePointIndex, 2 as UTCTimestamp, [4, 5, 6]);
-			p1.add(0 as TimePointIndex, 3 as UTCTimestamp, [10, 20, 30]);
-			p1.add(5 as TimePointIndex, 4 as UTCTimestamp, [40, 50, 60]);
-			p1.add(9 as TimePointIndex, 5 as UTCTimestamp, [100, 200, 300]);
+			p1.add(-9 as TimePointIndex, 1 as UTCTimestamp, { value: [1, 2, 3] });
+			p1.add(-5 as TimePointIndex, 2 as UTCTimestamp, { value: [4, 5, 6] });
+			p1.add(0 as TimePointIndex, 3 as UTCTimestamp, { value: [10, 20, 30] });
+			p1.add(5 as TimePointIndex, 4 as UTCTimestamp, { value: [40, 50, 60] });
+			p1.add(9 as TimePointIndex, 5 as UTCTimestamp, { value: [100, 200, 300] });
 		});
 
 		it('should remove all the plot rows starting from the specified index, if the index is inside the PlotList\'s range', () => {
@@ -172,10 +180,10 @@ describe('PlotList', () => {
 			expect(p1.firstIndex()).to.be.equal(-9 as TimePointIndex);
 			expect(p1.last()).to.deep.include({ index: 5 as TimePointIndex, value: [40, 50, 60] });
 			expect(p1.lastIndex()).to.be.equal(5 as TimePointIndex);
-			expect(ensureNotNull(p1.valueAt(-9 as TimePointIndex)).value).to.include.ordered.members([1, 2, 3]);
-			expect(ensureNotNull(p1.valueAt(-5 as TimePointIndex)).value).to.include.ordered.members([4, 5, 6]);
-			expect(ensureNotNull(p1.valueAt(0 as TimePointIndex)).value).to.include.ordered.members([10, 20, 30]);
-			expect(ensureNotNull(p1.valueAt(5 as TimePointIndex)).value).to.include.ordered.members([40, 50, 60]);
+			expect(ensureNotNull(p1.valueAt(-9 as TimePointIndex)).plot.value).to.include.ordered.members([1, 2, 3]);
+			expect(ensureNotNull(p1.valueAt(-5 as TimePointIndex)).plot.value).to.include.ordered.members([4, 5, 6]);
+			expect(ensureNotNull(p1.valueAt(0 as TimePointIndex)).plot.value).to.include.ordered.members([10, 20, 30]);
+			expect(ensureNotNull(p1.valueAt(5 as TimePointIndex)).plot.value).to.include.ordered.members([40, 50, 60]);
 			expect(p1.valueAt(9 as TimePointIndex)).to.be.equal(null);
 
 			// second remove
@@ -186,7 +194,7 @@ describe('PlotList', () => {
 			expect(p1.firstIndex()).to.be.equal(-9 as TimePointIndex);
 			expect(p1.last()).to.deep.include({ index: -9 as TimePointIndex, value: [1, 2, 3] });
 			expect(p1.lastIndex()).to.be.equal(-9 as TimePointIndex);
-			expect(ensureNotNull(p1.valueAt(-9 as TimePointIndex)).value).to.include.ordered.members([1, 2, 3]);
+			expect(ensureNotNull(p1.valueAt(-9 as TimePointIndex)).plot.value).to.include.ordered.members([1, 2, 3]);
 			expect(p1.valueAt(-5 as TimePointIndex)).to.be.equal(null);
 			expect(p1.valueAt(0 as TimePointIndex)).to.be.equal(null);
 			expect(p1.valueAt(5 as TimePointIndex)).to.be.equal(null);
@@ -215,11 +223,11 @@ describe('PlotList', () => {
 			expect(p1.firstIndex()).to.be.equal(-9 as TimePointIndex);
 			expect(p1.last()).to.deep.include({ index: 9 as TimePointIndex, value: [100, 200, 300] });
 			expect(p1.lastIndex()).to.be.equal(9 as TimePointIndex);
-			expect(ensureNotNull(p1.valueAt(-9 as TimePointIndex)).value).to.include.ordered.members([1, 2, 3]);
-			expect(ensureNotNull(p1.valueAt(-5 as TimePointIndex)).value).to.include.ordered.members([4, 5, 6]);
-			expect(ensureNotNull(p1.valueAt(0 as TimePointIndex)).value).to.include.ordered.members([10, 20, 30]);
-			expect(ensureNotNull(p1.valueAt(5 as TimePointIndex)).value).to.include.ordered.members([40, 50, 60]);
-			expect(ensureNotNull(p1.valueAt(9 as TimePointIndex)).value).to.include.ordered.members([100, 200, 300]);
+			expect(ensureNotNull(p1.valueAt(-9 as TimePointIndex)).plot.value).to.include.ordered.members([1, 2, 3]);
+			expect(ensureNotNull(p1.valueAt(-5 as TimePointIndex)).plot.value).to.include.ordered.members([4, 5, 6]);
+			expect(ensureNotNull(p1.valueAt(0 as TimePointIndex)).plot.value).to.include.ordered.members([10, 20, 30]);
+			expect(ensureNotNull(p1.valueAt(5 as TimePointIndex)).plot.value).to.include.ordered.members([40, 50, 60]);
+			expect(ensureNotNull(p1.valueAt(9 as TimePointIndex)).plot.value).to.include.ordered.members([100, 200, 300]);
 		});
 
 		it('should remove all the plot rows if the specified index is less than first index in PlotList', () => {
@@ -239,13 +247,13 @@ describe('PlotList', () => {
 	});
 
 	describe('search', () => {
-		const p1 = new PlotList<UTCTimestamp, PlotValueTuple>();
+		const p1 = new PlotList<UTCTimestamp, Plot3>();
 
 		beforeEach(() => {
 			p1.clear();
-			p1.add(-5 as TimePointIndex, 1 as UTCTimestamp, [1, 2, 3]);
-			p1.add(0 as TimePointIndex, 2 as UTCTimestamp, [10, 20, 30]);
-			p1.add(5 as TimePointIndex, 3 as UTCTimestamp, [100, 200, 300]);
+			p1.add(-5 as TimePointIndex, 1 as UTCTimestamp, { value: [1, 2, 3] });
+			p1.add(0 as TimePointIndex, 2 as UTCTimestamp, { value: [10, 20, 30] });
+			p1.add(5 as TimePointIndex, 3 as UTCTimestamp, { value: [100, 200, 300] });
 		});
 
 		it('should find respective values by given index and search strategy', () => {
@@ -266,15 +274,15 @@ describe('PlotList', () => {
 	});
 
 	describe('search with skipping empty values', () => {
-		const p1 = new PlotList<UTCTimestamp, PlotValueTuple>(null, (value: PlotValueTuple) => {
-			return value[1] === undefined;
+		const p1 = new PlotList<UTCTimestamp, Plot3>(null, (value: Plot3) => {
+			return value.value[1] === undefined;
 		});
 
 		beforeEach(() => {
 			p1.clear();
-			p1.add(-5 as TimePointIndex, 1 as UTCTimestamp, [1, undefined, 3]);
-			p1.add(0 as TimePointIndex, 2 as UTCTimestamp, [10, 20, 30]);
-			p1.add(5 as TimePointIndex, 3 as UTCTimestamp, [100, undefined, 300]);
+			p1.add(-5 as TimePointIndex, 1 as UTCTimestamp, { value: [1, undefined, 3] });
+			p1.add(0 as TimePointIndex, 2 as UTCTimestamp, { value: [10, 20, 30] });
+			p1.add(5 as TimePointIndex, 3 as UTCTimestamp, { value: [100, undefined, 300] });
 		});
 
 		it('should not check for empty values if search strategy is "exact"', () => {
@@ -309,21 +317,21 @@ describe('PlotList', () => {
 	});
 
 	describe('minMaxOnRangeCached', () => {
-		const pl = new PlotList<UTCTimestamp, PlotValueTuple5>(new Map([
-			['plot0', (plotRow: PlotValueTuple5) => plotRow[0]],
-			['plot1', (plotRow: PlotValueTuple5) => plotRow[1]],
-			['plot2', (plotRow: PlotValueTuple5) => plotRow[2]],
-			['plot3', (plotRow: PlotValueTuple5) => plotRow[3]],
-			['plot4', (plotRow: PlotValueTuple5) => plotRow[4]],
+		const pl = new PlotList<UTCTimestamp, Plot5>(new Map([
+			['plot0', (plotRow: Plot5) => plotRow.value[0]],
+			['plot1', (plotRow: Plot5) => plotRow.value[1]],
+			['plot2', (plotRow: Plot5) => plotRow.value[2]],
+			['plot3', (plotRow: Plot5) => plotRow.value[3]],
+			['plot4', (plotRow: Plot5) => plotRow.value[4]],
 		]));
 
 		beforeEach(() => {
 			pl.clear();
-			pl.add(0 as TimePointIndex, 1 as UTCTimestamp, [null, undefined, NaN, 1, NaN]);
-			pl.add(1 as TimePointIndex, 2 as UTCTimestamp, [null, undefined, NaN, 2, null]);
-			pl.add(2 as TimePointIndex, 3 as UTCTimestamp, [null, undefined, NaN, 3, undefined]);
-			pl.add(3 as TimePointIndex, 4 as UTCTimestamp, [null, undefined, NaN, 4, 123]);
-			pl.add(4 as TimePointIndex, 5 as UTCTimestamp, [null, undefined, NaN, 5, 1]);
+			pl.add(0 as TimePointIndex, 1 as UTCTimestamp, { value: [null, undefined, NaN, 1, NaN] });
+			pl.add(1 as TimePointIndex, 2 as UTCTimestamp, { value: [null, undefined, NaN, 2, null] });
+			pl.add(2 as TimePointIndex, 3 as UTCTimestamp, { value: [null, undefined, NaN, 3, undefined] });
+			pl.add(3 as TimePointIndex, 4 as UTCTimestamp, { value: [null, undefined, NaN, 4, 123] });
+			pl.add(4 as TimePointIndex, 5 as UTCTimestamp, { value: [null, undefined, NaN, 5, 1] });
 		});
 
 		it('should return null if there is only null, undefined or NaN values', () => {
@@ -362,12 +370,12 @@ describe('PlotList', () => {
 
 		it('should find minMax with non subsequent indices', () => {
 			pl.clear();
-			pl.add(0 as TimePointIndex, 1 as UTCTimestamp, [null, undefined, NaN, 1, NaN]);
-			pl.add(2 as TimePointIndex, 2 as UTCTimestamp, [null, undefined, NaN, 2, null]);
-			pl.add(4 as TimePointIndex, 3 as UTCTimestamp, [null, undefined, NaN, 3, undefined]);
-			pl.add(6 as TimePointIndex, 4 as UTCTimestamp, [null, undefined, NaN, 4, 123]);
-			pl.add(20 as TimePointIndex, 5 as UTCTimestamp, [null, undefined, NaN, 10, 123]);
-			pl.add(100 as TimePointIndex, 6 as UTCTimestamp, [null, undefined, NaN, 5, 1]);
+			pl.add(0 as TimePointIndex, 1 as UTCTimestamp, { value: [null, undefined, NaN, 1, NaN] });
+			pl.add(2 as TimePointIndex, 2 as UTCTimestamp, { value: [null, undefined, NaN, 2, null] });
+			pl.add(4 as TimePointIndex, 3 as UTCTimestamp, { value: [null, undefined, NaN, 3, undefined] });
+			pl.add(6 as TimePointIndex, 4 as UTCTimestamp, { value: [null, undefined, NaN, 4, 123] });
+			pl.add(20 as TimePointIndex, 5 as UTCTimestamp, { value: [null, undefined, NaN, 10, 123] });
+			pl.add(100 as TimePointIndex, 6 as UTCTimestamp, { value: [null, undefined, NaN, 5, 1] });
 
 			const plots: PlotInfoList = [
 				{
@@ -398,10 +406,10 @@ describe('PlotList', () => {
 
 		it('should return correct values if the data has gaps and we start search with second-to-last chunk', () => {
 			pl.clear();
-			pl.add(29 as TimePointIndex, 1 as UTCTimestamp, [1, 1, 1, 1, 0]);
-			pl.add(31 as TimePointIndex, 2 as UTCTimestamp, [2, 2, 2, 2, 0]);
-			pl.add(55 as TimePointIndex, 3 as UTCTimestamp, [3, 3, 3, 3, 0]);
-			pl.add(65 as TimePointIndex, 4 as UTCTimestamp, [4, 4, 4, 4, 0]);
+			pl.add(29 as TimePointIndex, 1 as UTCTimestamp, { value: [1, 1, 1, 1, 0] });
+			pl.add(31 as TimePointIndex, 2 as UTCTimestamp, { value: [2, 2, 2, 2, 0] });
+			pl.add(55 as TimePointIndex, 3 as UTCTimestamp, { value: [3, 3, 3, 3, 0] });
+			pl.add(65 as TimePointIndex, 4 as UTCTimestamp, { value: [4, 4, 4, 4, 0] });
 
 			const plots: PlotInfoList = [
 				{
@@ -423,22 +431,22 @@ describe('PlotList', () => {
 	});
 
 	describe('minMaxOnRangeByPlotFunction and minMaxOnRangeByPlotFunctionCached', () => {
-		const pl = new PlotList<UTCTimestamp, OHLCTuple>(new Map([
-			['open', (plotListRow: OHLCTuple) => plotListRow[0]],
-			['high', (plotListRow: OHLCTuple) => plotListRow[1]],
-			['low', (plotListRow: OHLCTuple) => plotListRow[2]],
-			['close', (plotListRow: OHLCTuple) => plotListRow[3]],
-			['hl2', (plotListRow: OHLCTuple) => (ensure(plotListRow[1]) + ensure(plotListRow[2])) / 2],
-			['ohlc4', (plotListRow: OHLCTuple) => (ensure(plotListRow[0]) + ensure(plotListRow[1]) + ensure(plotListRow[2]) + ensure(plotListRow[3])) / 4],
+		const pl = new PlotList<UTCTimestamp, OHLCPlot>(new Map([
+			['open', (plotListRow: OHLCPlot) => plotListRow.value[0]],
+			['high', (plotListRow: OHLCPlot) => plotListRow.value[1]],
+			['low', (plotListRow: OHLCPlot) => plotListRow.value[2]],
+			['close', (plotListRow: OHLCPlot) => plotListRow.value[3]],
+			['hl2', (plotListRow: OHLCPlot) => (ensure(plotListRow.value[1]) + ensure(plotListRow.value[2])) / 2],
+			['ohlc4', (plotListRow: OHLCPlot) => (ensure(plotListRow.value[0]) + ensure(plotListRow.value[1]) + ensure(plotListRow.value[2]) + ensure(plotListRow.value[3])) / 4],
 		]));
 
 		beforeEach(() => {
 			pl.clear();
-			pl.add(0 as TimePointIndex, 1 as UTCTimestamp, [5, 7, 3, 6]);
-			pl.add(1 as TimePointIndex, 2 as UTCTimestamp, [10, 12, 8, 11]);
-			pl.add(2 as TimePointIndex, 3 as UTCTimestamp, [15, 17, 13, 16]);
-			pl.add(3 as TimePointIndex, 4 as UTCTimestamp, [20, 22, 18, 21]);
-			pl.add(4 as TimePointIndex, 5 as UTCTimestamp, [25, 27, 23, 26]);
+			pl.add(0 as TimePointIndex, 1 as UTCTimestamp, { value: [5, 7, 3, 6] });
+			pl.add(1 as TimePointIndex, 2 as UTCTimestamp, { value: [10, 12, 8, 11] });
+			pl.add(2 as TimePointIndex, 3 as UTCTimestamp, { value: [15, 17, 13, 16] });
+			pl.add(3 as TimePointIndex, 4 as UTCTimestamp, { value: [20, 22, 18, 21] });
+			pl.add(4 as TimePointIndex, 5 as UTCTimestamp, { value: [25, 27, 23, 26] });
 		});
 
 		it('should return correct min max for open', () => {
@@ -512,7 +520,7 @@ describe('PlotList', () => {
 
 	describe('range', () => {
 		it('should return correct range for existent data', () => {
-			const plotList = new PlotList<UTCTimestamp, PlotValueTuple>();
+			const plotList = new PlotList<UTCTimestamp, Plot3>();
 
 			plotList.merge([
 				row(0 as TimePointIndex),
@@ -531,7 +539,7 @@ describe('PlotList', () => {
 		});
 
 		it('should correct start index to the first existent time point', () => {
-			const plotList = new PlotList<UTCTimestamp, PlotValueTuple>();
+			const plotList = new PlotList<UTCTimestamp, Plot3>();
 
 			plotList.merge([
 				row(-1 as TimePointIndex),
@@ -546,7 +554,7 @@ describe('PlotList', () => {
 		});
 
 		it('should correct end index to the last existent time point', () => {
-			const plotList = new PlotList<UTCTimestamp, PlotValueTuple>();
+			const plotList = new PlotList<UTCTimestamp, Plot3>();
 
 			plotList.merge([
 				row(-1 as TimePointIndex),
@@ -561,7 +569,7 @@ describe('PlotList', () => {
 		});
 
 		it('should correct start and end indexes to the first/last existent time point', () => {
-			const plotList = new PlotList<UTCTimestamp, PlotValueTuple>();
+			const plotList = new PlotList<UTCTimestamp, Plot3>();
 
 			plotList.merge([
 				row(-1 as TimePointIndex),
@@ -576,7 +584,7 @@ describe('PlotList', () => {
 		});
 
 		it('should return empty plot list if there is no data in the range', () => {
-			const plotList = new PlotList<UTCTimestamp, PlotValueTuple>();
+			const plotList = new PlotList<UTCTimestamp, Plot3>();
 
 			plotList.merge([
 				row(-1 as TimePointIndex),
@@ -587,7 +595,7 @@ describe('PlotList', () => {
 				row(7 as TimePointIndex),
 			]);
 
-			function checkIsEmpty(pl: PlotList<UTCTimestamp, PlotValueTuple>): void {
+			function checkIsEmpty(pl: PlotList<UTCTimestamp, Plot3>): void {
 				expect(pl.size()).to.be.equal(0);
 				expect(pl.isEmpty()).to.be.equal(true);
 
@@ -603,8 +611,8 @@ describe('PlotList', () => {
 });
 
 describe('mergePlotRows', () => {
-	function plotRow(index: number, data?: PlotValue): PlotRow<UTCTimestamp, [PlotValue]> {
-		return { index: index as TimePointIndex, value: [data], time: 0 as UTCTimestamp };
+	function plotRow(index: number, data?: PlotValue): PlotRow<UTCTimestamp, { value: [PlotValue] }> {
+		return { index: index as TimePointIndex, plot: { value: [data] }, time: 0 as UTCTimestamp };
 	}
 
 	describe('(correctness)', () => {
@@ -669,7 +677,7 @@ describe('mergePlotRows', () => {
 	});
 
 	xdescribe('(perf)', () => {
-		function isSorted(array: ReadonlyArray<PlotRow<UTCTimestamp, [PlotValue]>>): boolean {
+		function isSorted(array: ReadonlyArray<PlotRow<UTCTimestamp, { value: [PlotValue] }>>): boolean {
 			for (let i = 1; i < array.length; ++i) {
 				if (array[i - 1].index > array[i].index) {
 					return false;
@@ -679,10 +687,10 @@ describe('mergePlotRows', () => {
 			return true;
 		}
 
-		function generateSortedPlotRows(size: number): PlotRow<UTCTimestamp, [PlotValue]>[] {
+		function generateSortedPlotRows(size: number): PlotRow<UTCTimestamp, { value: [PlotValue] }>[] {
 			const startIndex = (Math.random() * 1000) | 0;
 			// tslint:disable-next-line:prefer-array-literal
-			const array = new Array<PlotRow<UTCTimestamp, [PlotValue]>>(size);
+			const array = new Array<PlotRow<UTCTimestamp, { value: [PlotValue] }>>(size);
 			for (let i = 0; i < size; ++i) {
 				array[i] = plotRow(startIndex + i);
 			}

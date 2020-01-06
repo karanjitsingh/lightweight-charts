@@ -28,7 +28,7 @@ export interface TickMarkPacket {
 }
 
 export interface SeriesUpdatePacket {
-	update: PlotRow<Bar['time'], Bar['value']>[];
+	update: PlotRow<Bar['time'], Bar['plot']>[];
 }
 
 function newSeriesUpdatePacket(): SeriesUpdatePacket {
@@ -98,7 +98,7 @@ export function convertTime(time: Time): TimePoint {
 
 }
 
-function getLineBasedSeriesItemValue(item: LineData | HistogramData, palette: Palette): Bar['value'] {
+function getLineBasedSeriesItemValue(item: LineData | HistogramData, palette: Palette): Bar['plot'] {
 	const val = item.value;
 	// default value
 	let color: PlotValue = null;
@@ -107,11 +107,17 @@ function getLineBasedSeriesItemValue(item: LineData | HistogramData, palette: Pa
 			color = palette.addColor(item.color);
 		}
 	}
-	return [val, val, val, val, color];
+	return {
+		value: [val, val, val, val, color],
+		glyphs: [],
+	};
 }
 
-function getOHLCBasedSeriesItemValue(bar: BarData, palette: Palette): Bar['value'] {
-	return [bar.open, bar.high, bar.low, bar.close, null];
+function getOHLCBasedSeriesItemValue(bar: BarData, palette: Palette): Bar['plot'] {
+	return {
+		value: [bar.open, bar.high, bar.low, bar.close, null],
+		glyphs: bar.glyphs && bar.glyphs.length ? JSON.parse(JSON.stringify(bar.glyphs)) : [],
+	};
 }
 
 // we want to have compile-time checks that the type of the functions is correct
@@ -119,9 +125,9 @@ function getOHLCBasedSeriesItemValue(bar: BarData, palette: Palette): Bar['value
 // so let's use TimedSeriesItemValueFn for shut up the compiler in seriesItemValueFn
 // we need to be sure (and we're sure actually) that stored data has correct type for it's according series object
 type SeriesItemValueFnMap = {
-	[T in keyof SeriesDataItemTypeMap]: (item: SeriesDataItemTypeMap[T], palette: Palette) => Bar['value'];
+	[T in keyof SeriesDataItemTypeMap]: (item: SeriesDataItemTypeMap[T], palette: Palette) => Bar['plot'];
 };
-type TimedSeriesItemValueFn = (item: TimedData, palette: Palette) => Bar['value'];
+type TimedSeriesItemValueFn = (item: TimedData, palette: Palette) => Bar['plot'];
 
 const seriesItemValueFnMap: SeriesItemValueFnMap = {
 	Candlestick: getOHLCBasedSeriesItemValue,
@@ -131,7 +137,7 @@ const seriesItemValueFnMap: SeriesItemValueFnMap = {
 	Line: getLineBasedSeriesItemValue,
 };
 
-function seriesItemValueFn(seriesType: SeriesType): TimedSeriesItemValueFn {
+function seriesItemPlotFn(seriesType: SeriesType): TimedSeriesItemValueFn {
 	return seriesItemValueFnMap[seriesType] as TimedSeriesItemValueFn;
 }
 
@@ -340,13 +346,13 @@ export class DataLayer {
 					return;
 				}
 
-				const getItemValues = seriesItemValueFn(currentSeries.seriesType());
+				const getItemPlots = seriesItemPlotFn(currentSeries.seriesType());
 
 				const packet = seriesUpdates.get(currentSeries) || newSeriesUpdatePacket();
-				const seriesUpdate: PlotRow<Bar['time'], Bar['value']> = {
+				const seriesUpdate: PlotRow<Bar['time'], Bar['plot']> = {
 					index,
 					time: timePoint,
-					value: getItemValues(currentData, currentSeries.palette()),
+					plot: getItemPlots(currentData, currentSeries.palette()),
 				};
 				packet.update.push(seriesUpdate);
 				seriesUpdates.set(currentSeries, packet);
@@ -380,12 +386,12 @@ export class DataLayer {
 			pointData.index = index as TimePointIndex;
 			pointData.mapping.forEach((targetData: DataItemType, targetSeries: Series) => {
 				// add point to series
-				const getItemValues = seriesItemValueFn(targetSeries.seriesType());
+				const getItemPlots = seriesItemPlotFn(targetSeries.seriesType());
 				const packet = seriesUpdates.get(targetSeries) || newSeriesUpdatePacket();
-				const seriesUpdate: PlotRow<Bar['time'], Bar['value']> = {
+				const seriesUpdate: PlotRow<Bar['time'], Bar['plot']> = {
 					index: index as TimePointIndex,
 					time,
-					value: getItemValues(targetData, targetSeries.palette()),
+					plot: getItemPlots(targetData, targetSeries.palette()),
 				};
 				packet.update.push(seriesUpdate);
 				seriesUpdates.set(targetSeries, packet);

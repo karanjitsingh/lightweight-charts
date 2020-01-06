@@ -1,3 +1,4 @@
+import { Glyph } from '../model/glyph';
 import { SeriesItemsIndexesRange } from '../model/time-data';
 
 import { BarCandlestickItemBase } from './bars-renderer';
@@ -8,6 +9,7 @@ export interface CandlestickItem extends BarCandlestickItemBase {
 	color: string;
 	borderColor: string;
 	wickColor: string;
+	glyphs: Glyph[];
 }
 
 export interface PaneRendererCandlesticksData {

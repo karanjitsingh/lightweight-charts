@@ -50,7 +50,7 @@ export class Magnet {
 					return acc;
 				}
 				const prices = [
-					bar.value[SeriesPlotIndex.Close] as number,
+					bar.plot.value[SeriesPlotIndex.Close] as number,
 				];
 
 				// convert bar to pixels

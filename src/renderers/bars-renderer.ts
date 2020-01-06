@@ -1,4 +1,5 @@
 import { BarCoordinates, BarPrices } from '../model/bar';
+import { Glyph } from '../model/glyph';
 import { SeriesItemsIndexesRange, TimedValue } from '../model/time-data';
 
 import { IPaneRenderer } from './ipane-renderer';
@@ -8,6 +9,7 @@ export type BarCandlestickItemBase = TimedValue & BarPrices & BarCoordinates;
 
 export interface BarItem extends BarCandlestickItemBase {
 	color: string;
+	glyphs: Glyph[];
 }
 
 export interface PaneRendererBarsData {
