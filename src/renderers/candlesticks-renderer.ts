@@ -1,4 +1,4 @@
-import { Glyph } from '../model/glyph';
+import { Glyph, GlyphPosition, GlyphStyle } from '../model/glyph';
 import { SeriesItemsIndexesRange } from '../model/time-data';
 
 import { BarCandlestickItemBase } from './bars-renderer';
@@ -52,6 +52,8 @@ export class PaneRendererCandlesticks implements IPaneRenderer {
 			ctx.translate(-0.5, -0.5);
 			ctx.lineWidth = Constants.BarBorderWidth;
 
+			this._drawGlyphs(ctx, bars, this._data.visibleRange);
+
 			if (this._data.wickVisible) {
 				this._drawWicks(ctx, bars, this._data.visibleRange);
 			}
@@ -61,6 +63,62 @@ export class PaneRendererCandlesticks implements IPaneRenderer {
 			}
 
 			this._drawCandles(ctx, bars, this._data.visibleRange);
+		}
+	}
+
+	private _drawGlyphs(ctx: CanvasRenderingContext2D, bars: ReadonlyArray<CandlestickItem>, visibleRange: SeriesItemsIndexesRange): void {
+		for (let i = visibleRange.from; i < visibleRange.to; i++) {
+			const bar = bars[i];
+
+			let aboveCount = 0;
+			let belowCount = 0;
+
+			if (bar.glyphs && bar.glyphs.length) {
+				bar.glyphs.forEach((glyph: Glyph) => {
+					ctx.fillStyle = glyph.color;
+
+					const width = this._barWidth * 2;
+					const height = width;
+
+					const posX = bar.x - width / 2 + 1;
+					let posY;
+
+					// let offset = 0;
+
+					if (glyph.position === GlyphPosition.Above) {
+						aboveCount++;
+						posY = bar.highY - aboveCount * height * 1.5 - height / 2;
+					} else {
+						belowCount++;
+						posY = bar.lowY + (belowCount - 1) * height * 1.5 + height;
+					}
+
+					switch (glyph.style) {
+						case GlyphStyle.Circle:
+							ctx.beginPath();
+							ctx.arc(posX + width / 2, posY + width / 2, width / 2, 0, 2 * Math.PI);
+							ctx.fill();
+							break;
+						case GlyphStyle.UpTriangle:
+							ctx.beginPath();
+							ctx.moveTo(posX + width / 2, posY);
+							ctx.lineTo(posX, posY + height);
+							ctx.lineTo(posX + width, posY + height);
+							ctx.fill();
+							break;
+						case GlyphStyle.DownTriangle:
+							ctx.beginPath();
+							ctx.moveTo(posX + width / 2, posY + height);
+							ctx.lineTo(posX + width, posY);
+							ctx.lineTo(posX, posY);
+							ctx.fill();
+							break;
+						case GlyphStyle.Square:
+							ctx.fillRect(posX, posY, width, height);
+							break;
+					}
+				});
+			}
 		}
 	}
 
