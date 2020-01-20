@@ -4,12 +4,12 @@ export interface Glyph {
 	position: GlyphPosition;
 }
 
-export enum GlyphPosition {
+export const enum GlyphPosition {
 	Above,
 	Below,
 }
 
-export enum GlyphStyle {
+export const enum GlyphStyle {
 	UpTriangle,
 	DownTriangle,
 	Circle,
