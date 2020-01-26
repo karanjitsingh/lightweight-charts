@@ -235,6 +235,10 @@ export class PlotList<TimeType, TPlot extends Plot = Plot> {
 		return removedPlotRows.length > 0 ? removedPlotRows[0] : null;
 	}
 
+	public raw(): PlotRow<TimeType, TPlot>[] {
+		return this._items;
+	}
+
 	private _indexAt(offset: PlotRowIndex): TimePointIndex {
 		return this._items[offset].index;
 	}

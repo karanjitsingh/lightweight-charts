@@ -5,13 +5,10 @@ import { BarPrice } from '../model/bar';
 import { Coordinate } from '../model/coordinate';
 import { Series } from '../model/series';
 import { SeriesMarker } from '../model/series-markers';
-import {
-	SeriesOptionsMap,
-	SeriesPartialOptionsMap,
-	SeriesType,
-} from '../model/series-options';
+import { SeriesOptionsMap, SeriesPartialOptionsMap, SeriesType } from '../model/series-options';
+import { UTCTimestamp } from '../model/time-data';
 
-import { DataUpdatesConsumer, SeriesDataItemTypeMap, Time } from './data-consumer';
+import { BarData, DataUpdatesConsumer, HistogramData, LineData, SeriesDataItemTypeMap, Time } from './data-consumer';
 import { convertTime } from './data-layer';
 import { IPriceFormatter, ISeriesApi } from './iseries-api';
 
@@ -46,6 +43,42 @@ export class SeriesApi<TSeriesType extends SeriesType> implements ISeriesApi<TSe
 		return this._series.priceScale().priceToCoordinate(price, firstValue.value);
 	}
 
+	public getNearestItem(timestamp: UTCTimestamp): BarData | LineData | HistogramData | null {
+		const list = this._series.bars().raw();
+
+		if (list && list.length) {
+			const seriesType = this._series.seriesType();
+
+			// tslint:disable-next-line: typedef
+			const plot = list[this.bsearch(list, (item) => item.time.timestamp, timestamp)];
+
+			if (seriesType === 'Area' || seriesType === 'Histogram' || seriesType === 'Bar') {
+				if (seriesType === 'Histogram') {
+					return {
+						time: plot.time.timestamp,
+						color: plot.plot.value[4] ? this._series.palette().colorByIndex(plot.plot.value[4]) : undefined,
+						value: plot.plot.value[0] as number,
+					};
+				}
+				return {
+					time: plot.time.timestamp,
+					value: plot.plot.value[0] as number,
+				};
+			} else {
+				return {
+					open: plot.plot.value[0] as number,
+					high: plot.plot.value[1] as number,
+					low: plot.plot.value[2] as number,
+					close: plot.plot.value[3] as number,
+					time: plot.time.timestamp,
+					glyphs: plot.plot.glyphs,
+				};
+			}
+		}
+
+		return null;
+	}
+
 	public setData(data: SeriesDataItemTypeMap[TSeriesType][]): void {
 		this._dataUpdatesConsumer.applyNewData(this._series, data);
 	}
@@ -68,5 +101,41 @@ export class SeriesApi<TSeriesType extends SeriesType> implements ISeriesApi<TSe
 
 	public options(): Readonly<SeriesOptionsMap[TSeriesType]> {
 		return clone(this._series.options());
+	}
+
+	private bsearch<T>(list: T[], predicate: (item: T) => UTCTimestamp, t: UTCTimestamp): number {
+		if (!list.length) {
+			return -1;
+		}
+
+		let left = 0;
+		let right = list.length - 1;
+
+		let middle = Math.floor((left + right) / 2);
+
+		if (predicate(list[left]) >= t) {
+			return left;
+		}
+		if (predicate(list[right]) <= t) {
+			return right;
+		}
+
+		while (left !== right && left + 1 !== right) {
+			if (predicate(list[middle]) < t) {
+				left = middle;
+			} else if (predicate(list[middle]) > t) {
+				right = middle;
+			} else {
+				return middle;
+			}
+
+			middle = Math.floor((left + right) / 2);
+		}
+
+		if (predicate(list[right]) <= t) {
+			return right;
+		}
+
+		return left;
 	}
 }

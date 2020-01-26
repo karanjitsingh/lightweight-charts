@@ -199,6 +199,8 @@
 
         var candleSeries = chart.addCandlestickSeries()
 
+        window['candleSeries'] = candleSeries;
+
         candleSeries.setData(chartUpdate.candles);
 
         var volumeSeries = chart.addHistogramSeries({

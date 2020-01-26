@@ -1,13 +1,10 @@
 import { BarPrice } from '../model/bar';
 import { Coordinate } from '../model/coordinate';
 import { SeriesMarker } from '../model/series-markers';
-import {
-	SeriesOptionsMap,
-	SeriesPartialOptionsMap,
-	SeriesType,
-} from '../model/series-options';
+import { SeriesOptionsMap, SeriesPartialOptionsMap, SeriesType } from '../model/series-options';
+import { UTCTimestamp } from '../model/time-data';
 
-import { SeriesDataItemTypeMap, Time } from './data-consumer';
+import { BarData, HistogramData, LineData, SeriesDataItemTypeMap, Time } from './data-consumer';
 
 /** Interface to be implemented by the object in order to be used as a price formatter */
 export interface IPriceFormatter {
@@ -49,6 +46,12 @@ export interface ISeriesApi<TSeriesType extends SeriesType> {
 	 * @param data - ordered (earlier time point goes first) array of data items. Old data is fully replaced with the new one.
 	 */
 	setData(data: SeriesDataItemTypeMap[TSeriesType][]): void;
+
+	/**
+	 * Get the item closes to timestamp
+	 * @param timestamp - timestamp
+	 */
+	getNearestItem(timestamp: UTCTimestamp): BarData | LineData | HistogramData | null;
 
 	/**
 	 * Adds or replaces a new bar
