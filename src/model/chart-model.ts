@@ -79,6 +79,10 @@ export interface ChartOptions {
 }
 
 export class ChartModel implements IDestroyable {
+	private static MODEL_COUNTER: number = 0;
+	private static MODEL_MAP: Map<number, ChartModel> = new Map();
+
+	private _id: number;
 	private readonly _options: ChartOptions;
 	private readonly _invalidateHandler: InvalidateHandler;
 
@@ -100,6 +104,9 @@ export class ChartModel implements IDestroyable {
 	private _crosshairMoved: Delegate<TimePointIndex | null, Point | null> = new Delegate();
 
 	public constructor(invalidateHandler: InvalidateHandler, options: ChartOptions) {
+		this._id = ChartModel.MODEL_COUNTER++;
+		ChartModel.MODEL_MAP.set(this._id, this);
+
 		this._invalidateHandler = invalidateHandler;
 		this._options = options;
 
@@ -304,6 +311,12 @@ export class ChartModel implements IDestroyable {
 	 * @param scale - Zoom value. Negative value means zoom out, positive - zoom in.
 	 */
 	public zoomTime(pointX: Coordinate, scale: number): void {
+		ChartModel.MODEL_MAP.forEach((model: ChartModel) => {
+			model._zoomTime(pointX, scale);
+		});
+	}
+
+	public _zoomTime(pointX: Coordinate, scale: number): void {
 		const timeScale = this.timeScale();
 		if (timeScale.isEmpty() || scale === 0) {
 			return;
@@ -319,14 +332,34 @@ export class ChartModel implements IDestroyable {
 		this.lightUpdate();
 	}
 
-	public scrollChart(x: Coordinate): void {
+	public scrollChart(x: Coordinate, sync: boolean = true): void {
+		if (sync) {
+			ChartModel.MODEL_MAP.forEach((model: ChartModel) => {
+				model._scrollChart(x);
+			});
+		} else {
+			this._scrollChart(x);
+		}
+	}
+
+	public _scrollChart(x: Coordinate): void {
 		this.startScrollTime(0 as Coordinate);
 		this.scrollTimeTo(x);
 		this.endScrollTime();
 	}
 
-	public scaleTimeTo(x: Coordinate): void {
-		this._timeScale.scaleTo(x);
+	public scaleTimeTo(x: Coordinate, sync: boolean = true): void {
+		if (sync) {
+			ChartModel.MODEL_MAP.forEach((model: ChartModel) => {
+				model._scaleTimeTo(x);
+			});
+		} else {
+			this._scaleTimeTo(x);
+		}
+	}
+
+	public _scaleTimeTo(x: Coordinate): void {
+		this._timeScale.scrollTo(x);
 		this.recalculateAllPanes();
 		this.updateCrosshair();
 		this.lightUpdate();
@@ -364,6 +397,12 @@ export class ChartModel implements IDestroyable {
 	}
 
 	public resetTimeScale(): void {
+		ChartModel.MODEL_MAP.forEach((model: ChartModel) => {
+			model._resetTimeScale();
+		});
+	}
+
+	public _resetTimeScale(): void {
 		this._timeScale.restoreDefault();
 		this.recalculateAllPanes();
 		this.updateCrosshair();
