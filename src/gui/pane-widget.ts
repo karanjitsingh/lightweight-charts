@@ -263,7 +263,7 @@ export class PaneWidget implements IDestroyable {
 				hitTest.view.moveHandler(x, y);
 			}
 
-			this._syncCrosshair(x);
+			this.syncCrosshair(x);
 		}
 	}
 
@@ -389,7 +389,7 @@ export class PaneWidget implements IDestroyable {
 
 		if (!isMobile) {
 			this._clearCrosshairPosition();
-			this._syncCrosshair();
+			this.syncCrosshair();
 		}
 	}
 
@@ -521,14 +521,19 @@ export class PaneWidget implements IDestroyable {
 		this._setCrosshairPosition(coordinate, 0 as Coordinate);
 	}
 
-	private _syncCrosshair(x?: Coordinate): void {
+	/// Epoch / 1000
+	public getCoordinateByTime(time: number): Coordinate {
+		return this._model().timeScale().timeToCoordinate(time * 1000);
+	}
+
+	public syncCrosshair(x?: Coordinate, force?: boolean): void {
 		if (x !== undefined) {
 			const index = this._model().timeScale().coordinateToIndex(x);
 			const time = this._model().timeScale().indexToUserTime(index);
 
 			if (time) {
 				PaneWidget.PANE_MAP.forEach((pane: PaneWidget, id: number) => {
-					if (this._paneId !== id) {
+					if (this._paneId !== id || force) {
 						pane.setCrosshairPositionByTime(time.timestamp);
 					}
 				});
@@ -540,6 +545,10 @@ export class PaneWidget implements IDestroyable {
 				}
 			});
 		}
+	}
+
+	public getWidth(): number {
+		return this.state().width();
 	}
 
 	private _backgroundColor(): string {

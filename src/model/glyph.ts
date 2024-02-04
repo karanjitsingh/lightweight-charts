@@ -14,4 +14,5 @@ export const enum GlyphStyle {
 	DownTriangle,
 	Circle,
 	Square,
+	Cross,
 }

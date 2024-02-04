@@ -6,6 +6,7 @@ import { clone, DeepPartial, merge } from '../helpers/strict-type-checks';
 
 import { BarPrice, BarPrices } from '../model/bar';
 import { ChartOptions } from '../model/chart-model';
+import { Coordinate } from '../model/coordinate';
 import { Series } from '../model/series';
 import {
 	AreaSeriesOptions,
@@ -92,6 +93,18 @@ export class ChartApi implements IChartApi, DataUpdatesConsumer<SeriesType> {
 		const model = this._chartWidget.model();
 		this._priceScaleApi = new PriceScaleApi(model);
 		this._timeScaleApi = new TimeScaleApi(model);
+	}
+
+	public scrollToTimestamp(timestamp: number): void {
+		const coordinate = this._chartWidget.paneWidgets()[0].getCoordinateByTime(timestamp);
+		const width = this._chartWidget.paneWidgets()[0].getWidth();
+		this._chartWidget.model().scrollChart(Math.floor(coordinate * -1  + width / 2) as Coordinate, true);
+		this.setCrosshairToTimestamp(timestamp);
+	}
+
+	public setCrosshairToTimestamp(timestamp: number): void {
+		const coordinate = this._chartWidget.paneWidgets()[0].getCoordinateByTime(timestamp);
+		this._chartWidget.paneWidgets()[0].syncCrosshair(coordinate, true);
 	}
 
 	public remove(): void {

@@ -152,4 +152,16 @@ export interface IChartApi {
 	 * @returns a canvas with the chart drawn on
 	 */
 	takeScreenshot(): HTMLCanvasElement;
+
+	/**
+	 * Sets the crosshair to specified timestamp
+	 * @param timestamp epoch/1000
+	 */
+	setCrosshairToTimestamp(timestamp: number): void;
+
+	/**
+	 * Scrolls to timestamp.
+	 * @param timestamp epoch/1000
+	 */
+	scrollToTimestamp(timestamp: number): void;
 }

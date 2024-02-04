@@ -76,8 +76,10 @@ export class PaneRendererCandlesticks implements IPaneRenderer {
 			if (bar.glyphs && bar.glyphs.length) {
 				bar.glyphs.forEach((glyph: Glyph) => {
 					ctx.fillStyle = glyph.color;
+					ctx.strokeStyle = glyph.color;
+					ctx.lineWidth = 2;
 
-					const width = this._barWidth * 2;
+					const width = this._barWidth * 3;
 					const height = width;
 
 					const posX = bar.x - width / 2 + 1;
@@ -115,6 +117,14 @@ export class PaneRendererCandlesticks implements IPaneRenderer {
 							break;
 						case GlyphStyle.Square:
 							ctx.fillRect(posX, posY, width, height);
+							break;
+						case GlyphStyle.Cross:
+							ctx.beginPath();
+							ctx.moveTo(posX, posY);
+							ctx.lineTo(posX + width, posY + height);
+							ctx.moveTo(posX + width, posY);
+							ctx.lineTo(posX, posY + height);
+							ctx.stroke();
 							break;
 					}
 				});
