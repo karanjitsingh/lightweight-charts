@@ -15,4 +15,8 @@ export const enum GlyphStyle {
 	Circle,
 	Square,
 	Cross,
+	UpArrow,
+	DownArrow,
+	UpDoubleArrow,
+	DownDoubleArrow,
 }

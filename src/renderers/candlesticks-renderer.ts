@@ -126,6 +126,14 @@ export class PaneRendererCandlesticks implements IPaneRenderer {
 							ctx.lineTo(posX, posY + height);
 							ctx.stroke();
 							break;
+						case GlyphStyle.UpArrow:
+							break;
+						case GlyphStyle.DownArrow:
+							break;
+						case GlyphStyle.UpDoubleArrow:
+							break;
+						case GlyphStyle.DownDoubleArrow:
+							break;
 					}
 				});
 			}
