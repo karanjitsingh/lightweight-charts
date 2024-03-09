@@ -61,7 +61,8 @@
     "ttypescript": "~1.5.7",
     "typecov": "~0.2.1",
     "typescript": "3.5.3",
-    "vrsource-tslint-rules": "6.0.0"
+    "vrsource-tslint-rules": "6.0.0",
+    "@types/node": "14.6.2"
   },
   "scripts": {
     "install": "npm run install-hooks && cd tests/e2e && npm i",

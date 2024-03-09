@@ -127,12 +127,50 @@ export class PaneRendererCandlesticks implements IPaneRenderer {
 							ctx.stroke();
 							break;
 						case GlyphStyle.UpArrow:
+							ctx.beginPath();
+							ctx.moveTo(posX, posY);
+							ctx.lineTo(posX + width / 2, posY + height);
+							ctx.lineTo(posX + width, posY);
+							ctx.stroke();
+
 							break;
 						case GlyphStyle.DownArrow:
+							ctx.beginPath();
+							ctx.moveTo(posX, posY + height);
+							ctx.lineTo(posX + width / 2, posY);
+							ctx.lineTo(posX + width, posY + height);
+							ctx.stroke();
 							break;
 						case GlyphStyle.UpDoubleArrow:
+							ctx.beginPath();
+							ctx.moveTo(posX, posY + height * 0.1);
+							ctx.lineTo(posX + width / 2, posY + height);
+							ctx.lineTo(posX + width, posY + height * 0.1);
+							ctx.stroke();
+							ctx.beginPath();
+							ctx.moveTo(posX, posY);
+							ctx.lineTo(posX + width / 2, posY + height * 0.9);
+							ctx.lineTo(posX + width, posY);
+							ctx.stroke();
 							break;
 						case GlyphStyle.DownDoubleArrow:
+							ctx.beginPath();
+							ctx.moveTo(posX, posY + height * 0.9);
+							ctx.lineTo(posX + width / 2, posY);
+							ctx.lineTo(posX + width, posY + height * 0.9);
+							ctx.stroke();
+							ctx.moveTo(posX, posY + height);
+							ctx.lineTo(posX + width / 2, posY + height * 0.1);
+							ctx.lineTo(posX + width, posY + height);
+							ctx.stroke();
+							break;
+						case GlyphStyle.Text:
+							if (glyph.text) {
+								ctx.textAlign = 'center';
+								ctx.textBaseline = 'middle';
+								ctx.font = '12px Arial';
+								ctx.fillText(glyph.text, posX + width / 2, posY + height / 2);
+							}
 							break;
 					}
 				});

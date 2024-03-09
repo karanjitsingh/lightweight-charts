@@ -43,14 +43,25 @@ export class SeriesApi<TSeriesType extends SeriesType> implements ISeriesApi<TSe
 		return this._series.priceScale().priceToCoordinate(price, firstValue.value);
 	}
 
-	public getNearestItem(timestamp: UTCTimestamp): BarData | LineData | HistogramData | null {
+	public getNearestIndex(timestamp: UTCTimestamp): number | null {
+		const list = this._series.bars().raw();
+
+		if (list && list.length) {
+			// tslint:disable-next-line: typedef
+			return this.bsearch(list, (item) => item.time.timestamp, timestamp);
+		}
+
+		return null;
+	}
+
+	public getItemAtIndex(index: number): BarData | LineData | HistogramData | null {
 		const list = this._series.bars().raw();
 
 		if (list && list.length) {
 			const seriesType = this._series.seriesType();
 
 			// tslint:disable-next-line: typedef
-			const plot = list[this.bsearch(list, (item) => item.time.timestamp, timestamp)];
+			const plot = list[index];
 
 			if (seriesType === 'Area' || seriesType === 'Histogram' || seriesType === 'Bar') {
 				if (seriesType === 'Histogram') {
@@ -77,6 +88,15 @@ export class SeriesApi<TSeriesType extends SeriesType> implements ISeriesApi<TSe
 		}
 
 		return null;
+	}
+
+	public getNearestItem(timestamp: UTCTimestamp): BarData | LineData | HistogramData | null {
+		const index = this.getNearestIndex(timestamp);
+		if (index === null) {
+			return null;
+		}
+
+		return this.getItemAtIndex(index);
 	}
 
 	public setData(data: SeriesDataItemTypeMap[TSeriesType][]): void {

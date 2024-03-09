@@ -48,10 +48,22 @@ export interface ISeriesApi<TSeriesType extends SeriesType> {
 	setData(data: SeriesDataItemTypeMap[TSeriesType][]): void;
 
 	/**
-	 * Get the item closes to timestamp
+	 * Get the item closest to timestamp
 	 * @param timestamp - timestamp
 	 */
 	getNearestItem(timestamp: UTCTimestamp): BarData | LineData | HistogramData | null;
+
+	/**
+	 * Get the index of item closest to timestamp
+	 * @param timestamp - timestamp
+	 */
+	getNearestIndex(timestamp: UTCTimestamp): number | null;
+
+	/**
+	 * Returns the item at the specified index
+	 * @param index - index to get data item at
+	 */
+	getItemAtIndex(index: number): BarData | LineData | HistogramData | null;
 
 	/**
 	 * Adds or replaces a new bar

@@ -2,6 +2,7 @@ export interface Glyph {
 	color: string;
 	style: GlyphStyle;
 	position: GlyphPosition;
+	text?: string;
 }
 
 export const enum GlyphPosition {
@@ -19,4 +20,5 @@ export const enum GlyphStyle {
 	DownArrow,
 	UpDoubleArrow,
 	DownDoubleArrow,
+	Text,
 }
