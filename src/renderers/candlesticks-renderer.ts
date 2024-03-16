@@ -1,7 +1,8 @@
-import { Glyph, GlyphPosition, GlyphStyle } from '../model/glyph';
+import { Glyph, GlyphPosition } from '../model/glyph';
 import { SeriesItemsIndexesRange } from '../model/time-data';
 
 import { BarCandlestickItemBase } from './bars-renderer';
+import { GlyphRenderer } from './glyph-renderer';
 import { IPaneRenderer } from './ipane-renderer';
 import { optimalBarWidth } from './optimal-bar-width';
 
@@ -95,84 +96,7 @@ export class PaneRendererCandlesticks implements IPaneRenderer {
 						posY = bar.lowY + (belowCount - 1) * height * 1.5 + height;
 					}
 
-					switch (glyph.style) {
-						case GlyphStyle.Circle:
-							ctx.beginPath();
-							ctx.arc(posX + width / 2, posY + width / 2, width / 2, 0, 2 * Math.PI);
-							ctx.fill();
-							break;
-						case GlyphStyle.UpTriangle:
-							ctx.beginPath();
-							ctx.moveTo(posX + width / 2, posY);
-							ctx.lineTo(posX, posY + height);
-							ctx.lineTo(posX + width, posY + height);
-							ctx.fill();
-							break;
-						case GlyphStyle.DownTriangle:
-							ctx.beginPath();
-							ctx.moveTo(posX + width / 2, posY + height);
-							ctx.lineTo(posX + width, posY);
-							ctx.lineTo(posX, posY);
-							ctx.fill();
-							break;
-						case GlyphStyle.Square:
-							ctx.fillRect(posX, posY, width, height);
-							break;
-						case GlyphStyle.Cross:
-							ctx.beginPath();
-							ctx.moveTo(posX, posY);
-							ctx.lineTo(posX + width, posY + height);
-							ctx.moveTo(posX + width, posY);
-							ctx.lineTo(posX, posY + height);
-							ctx.stroke();
-							break;
-						case GlyphStyle.UpArrow:
-							ctx.beginPath();
-							ctx.moveTo(posX, posY);
-							ctx.lineTo(posX + width / 2, posY + height);
-							ctx.lineTo(posX + width, posY);
-							ctx.stroke();
-
-							break;
-						case GlyphStyle.DownArrow:
-							ctx.beginPath();
-							ctx.moveTo(posX, posY + height);
-							ctx.lineTo(posX + width / 2, posY);
-							ctx.lineTo(posX + width, posY + height);
-							ctx.stroke();
-							break;
-						case GlyphStyle.UpDoubleArrow:
-							ctx.beginPath();
-							ctx.moveTo(posX, posY + height * 0.1);
-							ctx.lineTo(posX + width / 2, posY + height);
-							ctx.lineTo(posX + width, posY + height * 0.1);
-							ctx.stroke();
-							ctx.beginPath();
-							ctx.moveTo(posX, posY);
-							ctx.lineTo(posX + width / 2, posY + height * 0.9);
-							ctx.lineTo(posX + width, posY);
-							ctx.stroke();
-							break;
-						case GlyphStyle.DownDoubleArrow:
-							ctx.beginPath();
-							ctx.moveTo(posX, posY + height * 0.9);
-							ctx.lineTo(posX + width / 2, posY);
-							ctx.lineTo(posX + width, posY + height * 0.9);
-							ctx.stroke();
-							ctx.moveTo(posX, posY + height);
-							ctx.lineTo(posX + width / 2, posY + height * 0.1);
-							ctx.lineTo(posX + width, posY + height);
-							ctx.stroke();
-							break;
-						case GlyphStyle.Text:
-							if (glyph.text) {
-								ctx.textAlign = 'center';
-								ctx.textBaseline = 'middle';
-								ctx.font = '12px Arial';
-								ctx.fillText(glyph.text, posX + width / 2, posY + height / 2);
-							}
-							break;
-					}
+					GlyphRenderer.renderGlyph(ctx, glyph.style, { posX, posY, width, height }, glyph.text);
 				});
 			}
 		}

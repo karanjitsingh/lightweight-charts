@@ -21,4 +21,7 @@ export const enum GlyphStyle {
 	UpDoubleArrow,
 	DownDoubleArrow,
 	Text,
+	BangBang,
+	Bang,
+	Checkmark,
 }
