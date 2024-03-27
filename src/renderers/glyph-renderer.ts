@@ -48,48 +48,46 @@ export namespace GlyphRenderer {
 	function renderUpArrow(ctx: CanvasRenderingContext2D, dims: GlyphDimensions): void {
 		const { posX, posY, width, height } = dims;
 		ctx.beginPath();
-		ctx.moveTo(posX, posY);
-		ctx.lineTo(posX + width / 2, posY + height);
-		ctx.lineTo(posX + width, posY);
-		ctx.closePath();
+		ctx.moveTo(posX, posY + height * 0.9);
+		ctx.lineTo(posX + width / 2, posY + height * 0.1);
+		ctx.lineTo(posX + width, posY + height * 0.9);
 		ctx.stroke();
 	}
 
 	function renderDownArrow(ctx: CanvasRenderingContext2D, dims: GlyphDimensions): void {
 		const { posX, posY, width, height } = dims;
 		ctx.beginPath();
-		ctx.moveTo(posX, posY + height);
-		ctx.lineTo(posX + width / 2, posY);
-		ctx.lineTo(posX + width, posY + height);
-		ctx.closePath();
+		ctx.moveTo(posX, posY + height * 0.1);
+		ctx.lineTo(posX + width / 2, posY + height * 0.9);
+		ctx.lineTo(posX + width, posY + height * 0.1);
 		ctx.stroke();
 	}
 
 	function renderUpDoubleArrow(ctx: CanvasRenderingContext2D, dims: GlyphDimensions): void {
 		const { posX, posY, width, height } = dims;
 		ctx.beginPath();
-		ctx.moveTo(posX, posY + height * 0.1);
-		ctx.lineTo(posX + width / 2, posY + height);
-		ctx.lineTo(posX + width, posY + height * 0.1);
+		ctx.moveTo(posX, posY + height * 0.6);
+		ctx.lineTo(posX + width / 2, posY);
+		ctx.lineTo(posX + width, posY + height * 0.6);
 		ctx.stroke();
 		ctx.beginPath();
-		ctx.moveTo(posX, posY);
-		ctx.lineTo(posX + width / 2, posY + height * 0.9);
-		ctx.lineTo(posX + width, posY);
+		ctx.moveTo(posX, posY + height);
+		ctx.lineTo(posX + width / 2, posY + height * 0.4);
+		ctx.lineTo(posX + width, posY + height);
 		ctx.stroke();
 	}
 
 	function renderDownDoubleArrow(ctx: CanvasRenderingContext2D, dims: GlyphDimensions): void {
 		const { posX, posY, width, height } = dims;
 		ctx.beginPath();
-		ctx.moveTo(posX, posY + height * 0.9);
-		ctx.lineTo(posX + width / 2, posY);
-		ctx.lineTo(posX + width, posY + height * 0.9);
+		ctx.moveTo(posX, posY + height * 0.4);
+		ctx.lineTo(posX + width / 2, posY + height);
+		ctx.lineTo(posX + width, posY + height * 0.4);
 		ctx.stroke();
 		ctx.beginPath();
-		ctx.moveTo(posX, posY + height);
-		ctx.lineTo(posX + width / 2, posY + height * 0.1);
-		ctx.lineTo(posX + width, posY + height);
+		ctx.moveTo(posX, posY);
+		ctx.lineTo(posX + width / 2, posY + height * 0.6);
+		ctx.lineTo(posX + width, posY);
 		ctx.stroke();
 	}
 
