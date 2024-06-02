@@ -24,4 +24,6 @@ export const enum GlyphStyle {
 	BangBang,
 	Bang,
 	Checkmark,
+	LeftSemiCircle,
+	RightSemiCircle,
 }
